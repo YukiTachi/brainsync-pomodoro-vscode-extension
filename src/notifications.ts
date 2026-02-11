@@ -1,4 +1,7 @@
 import * as vscode from 'vscode';
+import { execFile } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 import { getNotificationConfig, getFatigueAlertConfig, AlertState, SessionRecord } from './config';
 import { getFatigueLevel, openDiagnosisPage, formatMinutes, getTodayDateStr } from './utils';
 import { Storage } from './storage';
@@ -19,10 +22,7 @@ export interface NotificationCallbacks {
 export class NotificationManager {
   private storage: Storage;
   private callbacks: NotificationCallbacks;
-  private soundWebviewPanel: vscode.WebviewPanel | null = null;
   private extensionUri: vscode.Uri;
-  private webviewReady: boolean = false;
-  private pendingSound: { url: string; volume: number } | null = null;
 
   constructor(
     storage: Storage,
@@ -146,7 +146,7 @@ export class NotificationManager {
   }
 
   // ============================================================
-  // Sound
+  // Sound (child_process 方式)
   // ============================================================
 
   private async playSound(type: 'work-end' | 'break-end' | 'alert'): Promise<void> {
@@ -156,218 +156,102 @@ export class NotificationManager {
     }
 
     try {
-      // サウンド再生用のWebviewを使用
-      if (!this.soundWebviewPanel) {
-        this.webviewReady = false;
-        this.soundWebviewPanel = this.createSoundWebview();
-      }
-
       const soundFile = type === 'alert' ? 'alert.mp3' : `${type}.mp3`;
-      const soundUri = this.soundWebviewPanel.webview.asWebviewUri(
-        vscode.Uri.joinPath(this.extensionUri, 'resources', 'sounds', soundFile)
-      );
+      const soundPath = vscode.Uri.joinPath(
+        this.extensionUri, 'resources', 'sounds', soundFile,
+      ).fsPath;
 
-      const message = {
-        command: 'playSound',
-        url: soundUri.toString(),
-        volume: config.soundVolume / 100,
-      };
-
-      if (this.webviewReady) {
-        this.soundWebviewPanel.webview.postMessage(message);
-      } else {
-        // Webviewがまだ準備できていない場合はキューに入れる
-        this.pendingSound = { url: message.url, volume: message.volume };
-      }
+      const volume = config.soundVolume / 100;
+      await this.executeAudioCommand(soundPath, volume);
     } catch (error) {
-      // サイレント失敗
       console.log('Sound playback failed:', error);
     }
   }
 
-  private createSoundWebview(): vscode.WebviewPanel {
-    const panel = vscode.window.createWebviewPanel(
-      'brainSyncSound',
-      'BrainSync Sound Player',
-      { viewColumn: vscode.ViewColumn.Beside, preserveFocus: true },
-      {
-        enableScripts: true,
-        localResourceRoots: [vscode.Uri.joinPath(this.extensionUri, 'resources', 'sounds')],
-        retainContextWhenHidden: true,
-      }
-    );
+  /**
+   * プラットフォームに応じたオーディオコマンドでサウンドを再生
+   */
+  private executeAudioCommand(filePath: string, volume: number): Promise<void> {
+    return new Promise((resolve) => {
+      const { command, args, options } = this.getAudioCommand(filePath, volume);
 
-    panel.webview.html = this.getSoundWebviewHtml(panel.webview);
-
-    // Webviewからのメッセージを受信
-    panel.webview.onDidReceiveMessage((message) => {
-      if (message.command === 'ready') {
-        this.webviewReady = true;
-        // 保留中のサウンドがあれば再生
-        if (this.pendingSound && this.soundWebviewPanel) {
-          this.soundWebviewPanel.webview.postMessage({
-            command: 'playSound',
-            url: this.pendingSound.url,
-            volume: this.pendingSound.volume,
-          });
-          this.pendingSound = null;
+      execFile(command, args, options, (error) => {
+        if (error) {
+          console.log(`Sound command failed (${command}):`, error.message);
         }
-      } else if (message.command === 'soundComplete') {
-        // サウンド再生完了後にパネルを破棄（タブを閉じる）
-        this.disposeSoundPanel();
-      }
+        resolve();
+      });
     });
-
-    panel.onDidDispose(() => {
-      this.soundWebviewPanel = null;
-      this.webviewReady = false;
-      this.pendingSound = null;
-    });
-
-    // パネル作成後、元のエディタにフォーカスを戻す
-    vscode.commands.executeCommand('workbench.action.focusPreviousGroup');
-
-    return panel;
   }
 
-  private disposeSoundPanel(): void {
-    if (this.soundWebviewPanel) {
-      this.soundWebviewPanel.dispose();
-      // onDidDispose で null 化される
+  /**
+   * プラットフォーム検出に基づいてオーディオコマンドを決定
+   */
+  getAudioCommand(
+    filePath: string,
+    volume: number,
+  ): { command: string; args: string[]; options: { env?: NodeJS.ProcessEnv } } {
+    const platform = process.platform;
+
+    if (platform === 'darwin') {
+      // macOS: afplay (プリインストール済み)
+      return {
+        command: 'afplay',
+        args: [filePath, '-v', String(volume)],
+        options: {},
+      };
     }
+
+    if (platform === 'win32') {
+      // Windows: PowerShell で MediaPlayer を使用（MP3 対応）
+      const psScript = [
+        'Add-Type -AssemblyName presentationCore;',
+        '$p = New-Object System.Windows.Media.MediaPlayer;',
+        `$p.Open([Uri]"${filePath.replace(/\\/g, '/')}");`,
+        `$p.Volume = ${volume};`,
+        '$p.Play();',
+        'Start-Sleep -Seconds 5;',
+      ].join(' ');
+      return {
+        command: 'powershell',
+        args: ['-NoProfile', '-Command', psScript],
+        options: {},
+      };
+    }
+
+    // Linux（WSL 含む）
+    if (this.isWSL()) {
+      // WSL: PULSE_SERVER を明示的に設定して paplay を使用
+      return {
+        command: 'paplay',
+        args: [filePath, `--volume=${Math.round(volume * 65536)}`],
+        options: {
+          env: { ...process.env, PULSE_SERVER: '/mnt/wslg/PulseServer' },
+        },
+      };
+    }
+
+    // ネイティブ Linux: paplay を使用
+    return {
+      command: 'paplay',
+      args: [filePath, `--volume=${Math.round(volume * 65536)}`],
+      options: {},
+    };
   }
 
-  private getSoundWebviewHtml(webview: vscode.Webview): string {
-    return `<!DOCTYPE html>
-<html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="
-    default-src 'none';
-    media-src ${webview.cspSource};
-    connect-src ${webview.cspSource};
-    script-src 'unsafe-inline';
-    style-src 'unsafe-inline';
-  ">
-  <title>BrainSync Sound Player</title>
-  <style>
-    body {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      font-family: var(--vscode-font-family);
-      color: var(--vscode-foreground);
-      background: var(--vscode-editor-background);
+  /**
+   * WSL 環境かどうかを検出
+   */
+  private isWSL(): boolean {
+    try {
+      const version = fs.readFileSync('/proc/version', 'utf8');
+      return /microsoft|wsl/i.test(version);
+    } catch {
+      return false;
     }
-    .status { opacity: 0.7; font-size: 14px; }
-    .icon { font-size: 48px; margin-bottom: 16px; }
-    #playBtn {
-      margin-top: 16px;
-      padding: 8px 24px;
-      cursor: pointer;
-      background: var(--vscode-button-background);
-      color: var(--vscode-button-foreground);
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      display: none;
-    }
-    #playBtn:hover { background: var(--vscode-button-hoverBackground); }
-  </style>
-</head>
-<body>
-  <div class="icon">🔔</div>
-  <p class="status" id="status">サウンドプレーヤー準備完了</p>
-  <button id="playBtn">🔊 サウンドを再生</button>
-  <script>
-    const vscode = acquireVsCodeApi();
-    let audioContext = null;
-    let pendingMessage = null;
-
-    function getAudioContext() {
-      if (!audioContext) {
-        audioContext = new AudioContext();
-      }
-      return audioContext;
-    }
-
-    async function playWithAudioContext(url, volume) {
-      try {
-        const ctx = getAudioContext();
-        if (ctx.state === 'suspended') {
-          await ctx.resume();
-        }
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-        const source = ctx.createBufferSource();
-        const gainNode = ctx.createGain();
-        gainNode.gain.value = volume;
-        source.buffer = audioBuffer;
-        source.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        source.start(0);
-        document.getElementById('status').textContent = '♪ サウンド再生中...';
-        source.onended = () => {
-          document.getElementById('status').textContent = 'サウンドプレーヤー準備完了';
-          vscode.postMessage({ command: 'soundComplete' });
-        };
-      } catch (err) {
-        console.error('AudioContext play failed:', err);
-        // フォールバック: Audio要素で再生を試みる
-        playWithAudioElement(url, volume);
-      }
-    }
-
-    function playWithAudioElement(url, volume) {
-      try {
-        const audio = new Audio(url);
-        audio.volume = volume;
-        audio.onended = () => {
-          vscode.postMessage({ command: 'soundComplete' });
-        };
-        audio.play().catch(err => {
-          console.error('Audio element play also failed:', err);
-          document.getElementById('status').textContent =
-            '⚠️ 自動再生がブロックされました。下のボタンをクリックしてください。';
-          document.getElementById('playBtn').style.display = 'inline-block';
-          pendingMessage = { url, volume };
-        });
-      } catch (err) {
-        console.error('Audio element creation failed:', err);
-      }
-    }
-
-    // 手動再生ボタン（autoplayがブロックされた場合のフォールバック）
-    document.getElementById('playBtn').addEventListener('click', () => {
-      if (pendingMessage) {
-        playWithAudioContext(pendingMessage.url, pendingMessage.volume);
-        pendingMessage = null;
-        document.getElementById('playBtn').style.display = 'none';
-      }
-    });
-
-    window.addEventListener('message', (event) => {
-      const message = event.data;
-      if (message.command === 'playSound') {
-        playWithAudioContext(message.url, message.volume);
-      }
-    });
-
-    // 準備完了を通知
-    vscode.postMessage({ command: 'ready' });
-  </script>
-</body>
-</html>`;
   }
 
   dispose(): void {
-    if (this.soundWebviewPanel) {
-      this.soundWebviewPanel.dispose();
-      this.soundWebviewPanel = null;
-    }
+    // child_process 方式ではクリーンアップ不要
   }
 }
