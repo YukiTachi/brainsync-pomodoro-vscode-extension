@@ -65,7 +65,7 @@ export class StatusBar {
   // ============================================================
 
   private setIdle(): void {
-    this.item.text = '$(brain) Ready';
+    this.item.text = '🧠 Ready';
     this.item.tooltip = 'BrainSync Focus Timer - クリックでメニューを開く';
     this.item.backgroundColor = undefined;
     this.item.accessibilityInformation = {
@@ -75,7 +75,7 @@ export class StatusBar {
   }
 
   private setWorking(remainingTime: number): void {
-    this.item.text = `$(brain) ${formatTime(remainingTime)}`;
+    this.item.text = `🧠 ${formatTime(remainingTime)}`;
     this.item.tooltip = `作業中 - 残り ${formatTime(remainingTime)}`;
     this.item.accessibilityInformation = {
       label: `BrainSync タイマー作業中、残り${Math.ceil(remainingTime / 60)}分`,
@@ -84,7 +84,7 @@ export class StatusBar {
   }
 
   private setBreaking(remainingTime: number): void {
-    this.item.text = `$(brain) ${formatTime(remainingTime)}`;
+    this.item.text = `🧠 ${formatTime(remainingTime)}`;
     this.item.tooltip = `休憩中 - 残り ${formatTime(remainingTime)}`;
     this.item.accessibilityInformation = {
       label: `BrainSync 休憩中、残り${Math.ceil(remainingTime / 60)}分`,
@@ -93,7 +93,7 @@ export class StatusBar {
   }
 
   private setPaused(remainingTime: number): void {
-    this.item.text = `$(brain) ${formatTime(remainingTime)} ⏸`;
+    this.item.text = `🧠 ${formatTime(remainingTime)} ⏸`;
     this.item.tooltip = '一時停止中 - クリックでメニューを開く';
     this.item.backgroundColor = undefined;
     this.item.accessibilityInformation = {
