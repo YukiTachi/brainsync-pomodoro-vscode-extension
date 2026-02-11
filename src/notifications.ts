@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { execFile } from 'child_process';
+import { execFile, execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getNotificationConfig, getFatigueAlertConfig, AlertState, SessionRecord } from './config';
@@ -208,11 +208,13 @@ export class NotificationManager {
 
     // Linux
     if (this.isWSL()) {
-      // WSL: Windows 側の PowerShell で再生（最も確実）
-      // \\wsl$\<distro>\<path> 形式で Windows からアクセス
-      const distro = process.env.WSL_DISTRO_NAME || 'Ubuntu';
-      const winPath = '\\\\wsl$\\' + distro + filePath.replace(/\//g, '\\');
-      return this.getPowerShellCommand(winPath, volume);
+      // WSL: wslpath でWindows パスに変換し、PowerShell で再生
+      try {
+        const winPath = execFileSync('wslpath', ['-w', filePath]).toString().trim();
+        return this.getPowerShellCommand(winPath, volume);
+      } catch {
+        // wslpath 失敗時は mpg123 にフォールバック
+      }
     }
 
     // ネイティブ Linux: mpg123 を使用（sudo apt install mpg123）
