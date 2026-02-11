@@ -152,7 +152,8 @@ cursor --install-extension donut-service.brainsync-focus-timer
 
 ### 通知が表示されない
 
-VS Code / Cursorの通知設定を確認してください。拡張機能の設定で `brainsync.notificationEnabled` が有効になっているか確認してください。
+- 拡張機能の設定で `brainsync.notificationEnabled` が有効になっているか確認してください
+- VS Code / Cursorの「応答不可モード」（Do Not Disturb）が有効になっている場合、通知がブロックされることがあります。設定 > 通知 > 「応答不可モードを有効にする」の拡張機能一覧で、**BrainSync Focus Timer にチェックが入っていない**ことを確認してください（チェックが入っていると通知がブロックされます）
 
 ### タイマーがリセットされる
 
