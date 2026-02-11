@@ -22,6 +22,10 @@
   "engines": {
     "vscode": "^1.80.0"
   },
+  "galleryBanner": {
+    "color": "#1a1a2e",
+    "theme": "dark"
+  },
   "categories": [
     "Other"
   ],
