@@ -116,7 +116,7 @@ Statistics Test Suite
 3. ドロップダウンから **「Extension Tests」** を選択
 4. **F5** キーまたは再生ボタンをクリック
 
-この構成は `.vscode/launch.json` に定義されており、テスト実行前に自動的に TypeScript のコンパイル（watch タスク）が行われます。
+この構成は `.vscode/launch.json` に定義されており、テスト実行前に自動的に TypeScript のコンパイル（`npm run compile`）が行われます。
 
 ---
 
