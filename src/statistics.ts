@@ -72,9 +72,7 @@ export function estimateFatigueScore(stats: Statistics): number {
  * 連続作業日数を計算
  */
 export function calculateConsecutiveDays(stats: Statistics): number {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = getTodayDateStr();
 
   // dailyStatsHistoryから計算（信頼できるソース）
   const allDays = [...stats.dailyStatsHistory];
@@ -100,7 +98,10 @@ export function calculateConsecutiveDays(stats: Statistics): number {
 
   // 今日セッションがない場合は昨日から計算開始
   const hasTodaySessions = daysWithSessions.has(todayStr);
-  const startDate = hasTodaySessions ? today : new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const startDate = new Date(todayStr + 'T00:00:00Z');
+  if (!hasTodaySessions) {
+    startDate.setUTCDate(startDate.getUTCDate() - 1);
+  }
 
   let consecutiveDays = 0;
   for (let i = 0; i < 14; i++) {
