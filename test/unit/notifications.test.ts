@@ -255,6 +255,26 @@ suite('NotificationManager Unit Tests', () => {
       // dispose 後も問題なく動くことを確認
       assert.ok(true, 'dispose completed without error');
     });
+
+    test('soundComplete メッセージでパネルが自動破棄される', async () => {
+      const manager = createManager();
+
+      await manager.notifyBreakComplete();
+
+      const panel = _getLastCreatedPanel();
+      assert.ok(panel, 'Panel should be created');
+
+      // ready → soundComplete のシーケンスをシミュレート
+      panel!.webview._simulateMessage({ command: 'ready' });
+      panel!.webview._simulateMessage({ command: 'soundComplete' });
+
+      // dispose 後、再度サウンドを再生すると新しいパネルが作成される
+      _resetLastCreatedPanel();
+      await manager.notifyBreakComplete();
+
+      const newPanel = _getLastCreatedPanel();
+      assert.ok(newPanel, 'New panel should be created after previous was disposed');
+    });
   });
 
   // ============================================================

@@ -361,5 +361,19 @@ suite('Webview HTML/JS Validation Tests', () => {
         'Should handle source.onended event to reset status',
       );
     });
+
+    test('Web Audio API 再生完了時に soundComplete メッセージが送信される', () => {
+      assert.ok(
+        html.includes("postMessage({ command: 'soundComplete' })"),
+        'Should send soundComplete message when Web Audio source ends',
+      );
+    });
+
+    test('HTML5 Audio 再生完了時に soundComplete メッセージが送信される', () => {
+      assert.ok(
+        html.includes('audio.onended'),
+        'Should handle audio.onended event for HTML5 Audio fallback',
+      );
+    });
   });
 });

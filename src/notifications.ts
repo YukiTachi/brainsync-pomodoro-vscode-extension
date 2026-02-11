@@ -199,7 +199,7 @@ export class NotificationManager {
 
     panel.webview.html = this.getSoundWebviewHtml(panel.webview);
 
-    // Webviewからの準備完了メッセージを受信
+    // Webviewからのメッセージを受信
     panel.webview.onDidReceiveMessage((message) => {
       if (message.command === 'ready') {
         this.webviewReady = true;
@@ -212,6 +212,9 @@ export class NotificationManager {
           });
           this.pendingSound = null;
         }
+      } else if (message.command === 'soundComplete') {
+        // サウンド再生完了後にパネルを破棄（タブを閉じる）
+        this.disposeSoundPanel();
       }
     });
 
@@ -221,7 +224,17 @@ export class NotificationManager {
       this.pendingSound = null;
     });
 
+    // パネル作成後、元のエディタにフォーカスを戻す
+    vscode.commands.executeCommand('workbench.action.focusPreviousGroup');
+
     return panel;
+  }
+
+  private disposeSoundPanel(): void {
+    if (this.soundWebviewPanel) {
+      this.soundWebviewPanel.dispose();
+      // onDidDispose で null 化される
+    }
   }
 
   private getSoundWebviewHtml(webview: vscode.Webview): string {
@@ -300,6 +313,7 @@ export class NotificationManager {
         document.getElementById('status').textContent = '♪ サウンド再生中...';
         source.onended = () => {
           document.getElementById('status').textContent = 'サウンドプレーヤー準備完了';
+          vscode.postMessage({ command: 'soundComplete' });
         };
       } catch (err) {
         console.error('AudioContext play failed:', err);
@@ -312,6 +326,9 @@ export class NotificationManager {
       try {
         const audio = new Audio(url);
         audio.volume = volume;
+        audio.onended = () => {
+          vscode.postMessage({ command: 'soundComplete' });
+        };
         audio.play().catch(err => {
           console.error('Audio element play also failed:', err);
           document.getElementById('status').textContent =

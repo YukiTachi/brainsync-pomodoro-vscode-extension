@@ -196,6 +196,16 @@ export const workspace = {
 };
 
 // ============================================================
+// commands
+// ============================================================
+export const commands = {
+  executeCommand: async (_command: string, ..._args: any[]): Promise<any> => {
+    // noop in tests
+    return undefined;
+  },
+};
+
+// ============================================================
 // env
 // ============================================================
 export const env = {
