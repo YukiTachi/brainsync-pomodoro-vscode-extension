@@ -22,6 +22,10 @@
   "engines": {
     "vscode": "^1.80.0"
   },
+  "galleryBanner": {
+    "color": "#1a1a2e",
+    "theme": "dark"
+  },
   "categories": [
     "Other"
   ],
@@ -169,7 +173,8 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "node ./out/test/runTest.js"
+    "test": "node ./out/test/runTest.js",
+    "test:unit": "npm run compile && node ./out/test/unit/runUnitTest.js"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",

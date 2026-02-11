@@ -21,47 +21,8 @@ BrainSync Focus Timerは、VS Code互換のすべてのエディタで動作し�
 - 🔗 **BrainSync脳疲労診断との連携**
 - ⚡ **軽量・高速**（バックグラウンド動作）
 
-## プライバシーポリシー
-
-この拡張機能は以下のデータを取り扱います：
-
-**ローカル保存データ:**
-- タイマーセッション記録（開始時刻、終了時刻、完了/中断状態）
-- 統計データ（日次・週次の集計）
-- 設定情報
-
-すべてのデータはVS CodeのGlobal Stateに保存され、お使いのコンピューター内に留まります。
-
-**外部送信データ:**
-- 診断ページへのリンクを開く際、UTMパラメータ（利用元の情報）を付与します
-- 個人を特定する情報は一切送信しません
-- セッションデータや統計データは送信しません
-
-## セキュリティ
-
-- Webview内で実行されるスクリプトはContent Security Policy (CSP)で保護
-- 外部スクリプトの読み込みは一切行いません
-- すべてのデータはローカルに保存され、外部サーバーへの送信は行いません
-
-## インストール
-
-### VS Code / Cursor共通
-
-#### 方法1: マーケットプレイスから
-
-1. 拡張機能マーケットプレイスで「BrainSync」を検索
-2. インストールボタンをクリック
-3. VS Code / Cursorを再起動
-
-#### 方法2: コマンドラインから
-
-```bash
-# VS Code
-code --install-extension donut-service.brainsync-focus-timer
-
-# Cursor
-cursor --install-extension donut-service.brainsync-focus-timer
-```
+<!-- スクリーンショット: 拡張機能の全体像がわかる画像を配置してください -->
+<!-- ![BrainSync Focus Timer の概要](images/screenshots/overview.png) -->
 
 ## 使い方
 
@@ -72,17 +33,30 @@ cursor --install-extension donut-service.brainsync-focus-timer
 3. **休憩**: 通知が来たら5分休憩
 4. **統計確認**: コマンドパレット > 「BrainSync: 統計を表示」
 
+<!-- スクリーンショット: ステータスバーのタイマー表示 -->
+<!-- ![ステータスバー](images/screenshots/statusbar.png) -->
+
+### タイマーサイクル
+
+```
+🧠 作業 (30分) → ☕ 短い休憩 (5分) → 🧠 作業 → ☕ 休憩 → 🧠 作業 → ☕ 休憩 → 🧠 作業 → 🌿 長い休憩 (15分)
+```
+
+4セッション完了ごとに長い休憩が入ります。
+
 ### コマンド一覧
 
-- `BrainSync: タイマー開始` - タイマーを開始
-- `BrainSync: タイマー一時停止/再開` - 一時停止または再開
-- `BrainSync: タイマーリセット` - タイマーをリセット
-- `BrainSync: 休憩をスキップ` - 休憩をスキップして作業開始
-- `BrainSync: 統計を表示` - 統計画面を開く
-- `BrainSync: 脳疲労診断を受ける` - 診断ページを開く
-- `BrainSync: データをエクスポート` - CSV形式でデータを保存
-- `BrainSync: 統計をリセット` - 統計データをクリア
-- `BrainSync: 設定` - 設定画面を開く
+| コマンド | 説明 |
+|---------|------|
+| `BrainSync: タイマー開始` | タイマーを開始 |
+| `BrainSync: タイマー一時停止/再開` | 一時停止または再開 |
+| `BrainSync: タイマーリセット` | タイマーをリセット |
+| `BrainSync: 休憩をスキップ` | 休憩をスキップして作業開始 |
+| `BrainSync: 統計を表示` | 統計画面を開く |
+| `BrainSync: 脳疲労診断を受ける` | 診断ページを開く |
+| `BrainSync: データをエクスポート` | CSV形式でデータを保存 |
+| `BrainSync: 統計をリセット` | 統計データをクリア |
+| `BrainSync: 設定` | 設定画面を開く |
 
 ### キーボードショートカット（推奨設定）
 
@@ -106,34 +80,80 @@ cursor --install-extension donut-service.brainsync-focus-timer
 }
 ```
 
-### カスタマイズ
-
-設定 > Extensions > BrainSync から以下をカスタマイズ可能:
-
-- 作業時間（15-60分）
-- 短い休憩時間（3-10分）
-- 長い休憩時間（10-30分）
-- 長い休憩までのセット数（2-8セット）
-- 通知のオン/オフ
-- サウンドのオン/オフと音量
-- 脳疲労アラート閾値
-
 ## 脳疲労スコアとは
 
 作業時間と休憩パターンから、脳の疲労度を0-45点で推定します。
 
-- 🟢 **0-10点**: 良好
-- 🟡 **11-20点**: やや注意
-- 🟠 **21-30点**: 警戒（休息を推奨）
-- 🔴 **31-45点**: 危険（即座に休息が必要）
+| スコア | レベル | 目安 |
+|--------|--------|------|
+| 🟢 0-10点 | 良好 | そのまま作業を続けてOK |
+| 🟡 11-20点 | やや注意 | 疲労に気をつけましょう |
+| 🟠 21-30点 | 警戒 | 休息を推奨します |
+| 🔴 31-45点 | 危険 | すぐに休憩してください |
+
+<!-- スクリーンショット: 統計画面と脳疲労スコア -->
+<!-- ![統計画面](images/screenshots/stats.png) -->
 
 詳しい診断は [BrainSync脳疲労診断](https://donut-service.com/brain-fatigue-assessment/) で受けられます。
+
+## カスタマイズ
+
+設定 > Extensions > BrainSync から以下をカスタマイズ可能:
+
+| 設定項目 | デフォルト | 範囲 |
+|---------|-----------|------|
+| 作業時間 | 30分 | 15-60分 |
+| 短い休憩時間 | 5分 | 3-10分 |
+| 長い休憩時間 | 15分 | 10-30分 |
+| 長い休憩までのセット数 | 4セット | 2-8セット |
+| 通知 | ON | ON/OFF |
+| サウンド | ON (bell) | bell/chime/silent |
+| 音量 | 50% | 0-100% |
+| 脳疲労アラート閾値 | 21点 | 15-30点 |
+
+## インストール
+
+### マーケットプレイスから（推奨）
+
+1. VS Code / Cursor の拡張機能マーケットプレイスで「**BrainSync**」を検索
+2. インストールボタンをクリック
+
+### コマンドラインから
+
+```bash
+# VS Code
+code --install-extension donut-service.brainsync-focus-timer
+
+# Cursor
+cursor --install-extension donut-service.brainsync-focus-timer
+```
+
+## プライバシーポリシー
+
+**ローカル保存データ:**
+- タイマーセッション記録（開始時刻、終了時刻、完了/中断状態）
+- 統計データ（日次・週次の集計）
+- 設定情報
+
+すべてのデータはVS CodeのGlobal Stateに保存され、お使いのコンピューター内に留まります。
+
+**外部送信データ:**
+- 診断ページへのリンクを開く際、UTMパラメータ（利用元の情報）を付与します
+- 個人を特定する情報は一切送信しません
+- セッションデータや統計データは送信しません
+
+## セキュリティ
+
+- Webview内で実行されるスクリプトはContent Security Policy (CSP)で保護
+- 外部スクリプトの読み込みは一切行いません
+- すべてのデータはローカルに保存され、外部サーバーへの送信は行いません
 
 ## トラブルシューティング
 
 ### 通知が表示されない
 
-VS Code / Cursorの通知設定を確認してください。拡張機能の設定で `brainsync.notificationEnabled` が有効になっているか確認してください。
+- 拡張機能の設定で `brainsync.notificationEnabled` が有効になっているか確認してください
+- VS Code / Cursorの「応答不可モード」（Do Not Disturb）が有効になっている場合、通知がブロックされることがあります。設定 > 通知 > 「応答不可モードを有効にする」の拡張機能一覧で、**BrainSync Focus Timer にチェックが入っていない**ことを確認してください（チェックが入っていると通知がブロックされます）
 
 ### タイマーがリセットされる
 
@@ -171,7 +191,3 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照
 - [脳疲労診断ページ](https://donut-service.com/brain-fatigue-assessment/)
 - [GitHub リポジトリ](https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension)
 - [変更履歴](CHANGELOG.md)
-
----
-
-**Enjoy your focused work! 🧠✨**
