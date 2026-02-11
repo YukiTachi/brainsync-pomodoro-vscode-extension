@@ -1,0 +1,185 @@
+{
+  "name": "brainsync-focus-timer",
+  "displayName": "BrainSync Focus Timer",
+  "description": "エンジニアの脳疲労を科学するポモドーロタイマー - 30分集中 + 統計 + 脳疲労推定",
+  "version": "0.1.0",
+  "publisher": "donut-service",
+  "author": {
+    "name": "Donut Service",
+    "email": "info@donut-service.com",
+    "url": "https://donut-service.com"
+  },
+  "icon": "resources/icons/brainsync-icon.png",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension"
+  },
+  "bugs": {
+    "url": "https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension/issues"
+  },
+  "homepage": "https://donut-service.com",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "pomodoro",
+    "timer",
+    "productivity",
+    "focus",
+    "brainsync",
+    "brain health",
+    "cognitive wellness",
+    "時間管理",
+    "脳疲労",
+    "集中力"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "brainsync.startTimer",
+        "title": "BrainSync: タイマー開始"
+      },
+      {
+        "command": "brainsync.pauseTimer",
+        "title": "BrainSync: タイマー一時停止/再開"
+      },
+      {
+        "command": "brainsync.resetTimer",
+        "title": "BrainSync: タイマーリセット"
+      },
+      {
+        "command": "brainsync.skipBreak",
+        "title": "BrainSync: 休憩をスキップ"
+      },
+      {
+        "command": "brainsync.viewStats",
+        "title": "BrainSync: 統計を表示"
+      },
+      {
+        "command": "brainsync.openDiagnosis",
+        "title": "BrainSync: 脳疲労診断を受ける"
+      },
+      {
+        "command": "brainsync.exportData",
+        "title": "BrainSync: データをエクスポート"
+      },
+      {
+        "command": "brainsync.resetStats",
+        "title": "BrainSync: 統計をリセット"
+      },
+      {
+        "command": "brainsync.settings",
+        "title": "BrainSync: 設定"
+      }
+    ],
+    "configuration": {
+      "title": "BrainSync Focus Timer",
+      "properties": {
+        "brainsync.workDuration": {
+          "type": "number",
+          "default": 30,
+          "minimum": 15,
+          "maximum": 60,
+          "description": "作業時間（分）"
+        },
+        "brainsync.shortBreak": {
+          "type": "number",
+          "default": 5,
+          "minimum": 3,
+          "maximum": 10,
+          "description": "短い休憩時間（分）"
+        },
+        "brainsync.longBreak": {
+          "type": "number",
+          "default": 15,
+          "minimum": 10,
+          "maximum": 30,
+          "description": "長い休憩時間（分）"
+        },
+        "brainsync.longBreakInterval": {
+          "type": "number",
+          "default": 4,
+          "minimum": 2,
+          "maximum": 8,
+          "description": "長い休憩までのセット数"
+        },
+        "brainsync.autoStartBreak": {
+          "type": "boolean",
+          "default": true,
+          "description": "作業終了後に自動で休憩を開始"
+        },
+        "brainsync.autoStartWork": {
+          "type": "boolean",
+          "default": false,
+          "description": "休憩終了後に自動で次のセッションを開始"
+        },
+        "brainsync.soundEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "サウンドを再生"
+        },
+        "brainsync.notificationEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "通知を表示"
+        },
+        "brainsync.soundVolume": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "maximum": 100,
+          "description": "サウンド音量（%）"
+        },
+        "brainsync.soundFile": {
+          "type": "string",
+          "enum": [
+            "bell",
+            "chime",
+            "silent"
+          ],
+          "default": "bell",
+          "description": "サウンドファイル"
+        },
+        "brainsync.fatigueAlertEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "脳疲労アラートを表示"
+        },
+        "brainsync.fatigueAlertThreshold": {
+          "type": "number",
+          "default": 21,
+          "minimum": 15,
+          "maximum": 30,
+          "description": "脳疲労アラート閾値（点）"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.80.0",
+    "@types/node": "^20.0.0",
+    "@types/mocha": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "mocha": "^10.0.0",
+    "typescript": "^5.0.0",
+    "@vscode/test-electron": "^2.3.0"
+  }
+}
