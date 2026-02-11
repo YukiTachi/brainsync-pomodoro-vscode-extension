@@ -274,6 +274,84 @@ export HTTPS_PROXY=http://proxy.example.com:8080
 npm test
 ```
 
+### Linux: 共有ライブラリ不足エラー（`libasound.so.2` など）
+
+`npm test` 実行時に以下のようなエラーが発生する場合があります:
+
+```
+error while loading shared libraries: libasound.so.2: cannot open shared object file: No such file or directory
+Exit code: 127
+```
+
+`@vscode/test-electron` がダウンロードする VSCode は Electron ベースのデスクトップアプリケーションであるため、Linux 環境では GUI 関連のシステムライブラリが必要です。最小構成の Linux や WSL 環境ではこれらが不足していることがあります。
+
+**Ubuntu / Debian 系の場合:**
+
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  libasound2 \
+  libatk1.0-0 \
+  libatk-bridge2.0-0 \
+  libcups2 \
+  libdrm2 \
+  libgbm1 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libx11-xcb1 \
+  libxcomposite1 \
+  libxdamage1 \
+  libxfixes3 \
+  libxrandr2 \
+  libxshmfence1 \
+  xdg-utils
+```
+
+**Fedora / RHEL 系の場合:**
+
+```bash
+sudo dnf install -y \
+  alsa-lib \
+  atk \
+  at-spi2-atk \
+  cups-libs \
+  libdrm \
+  mesa-libgbm \
+  gtk3 \
+  nspr \
+  nss \
+  libX11-xcb \
+  libXcomposite \
+  libXdamage \
+  libXfixes \
+  libXrandr \
+  libxshmfence \
+  xdg-utils
+```
+
+**不足ライブラリの特定方法:**
+
+どのライブラリが不足しているかを調べるには `ldd` コマンドが便利です:
+
+```bash
+ldd .vscode-test/vscode-linux-x64-*/code | grep "not found"
+```
+
+出力された `not found` のライブラリを個別にインストールしてください。
+
+**ディスプレイ環境がない場合（ヘッドレス Linux / CI 環境）:**
+
+VSCode (Electron) は描画先のディスプレイが必要です。ディスプレイのないサーバー環境や CI では、仮想フレームバッファ `xvfb` を使用してください:
+
+```bash
+sudo apt-get install -y xvfb    # Ubuntu/Debian
+# または
+sudo dnf install -y xorg-x11-server-Xvfb  # Fedora/RHEL
+
+xvfb-run npm test
+```
+
 ### デバッグ時にブレークポイントが効かない
 
 `tsconfig.json` の `sourceMap` が `true` になっていることを確認してください（デフォルトで有効です）。また、`out/` 内のファイルが最新であることを確認するため、`npm run compile` を再実行してください。
