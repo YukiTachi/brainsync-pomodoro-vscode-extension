@@ -203,38 +203,46 @@ export class NotificationManager {
     }
 
     if (platform === 'win32') {
-      // Windows: PowerShell で MediaPlayer を使用（MP3 対応）
-      const psScript = [
-        'Add-Type -AssemblyName presentationCore;',
-        '$p = New-Object System.Windows.Media.MediaPlayer;',
-        `$p.Open([Uri]"${filePath.replace(/\\/g, '/')}");`,
-        `$p.Volume = ${volume};`,
-        '$p.Play();',
-        'Start-Sleep -Seconds 5;',
-      ].join(' ');
-      return {
-        command: 'powershell',
-        args: ['-NoProfile', '-Command', psScript],
-        options: {},
-      };
+      return this.getPowerShellCommand(filePath, volume);
     }
 
-    // Linux（WSL 含む）
+    // Linux
     if (this.isWSL()) {
-      // WSL: PULSE_SERVER を明示的に設定して paplay を使用
-      return {
-        command: 'paplay',
-        args: [filePath, `--volume=${Math.round(volume * 65536)}`],
-        options: {
-          env: { ...process.env, PULSE_SERVER: '/mnt/wslg/PulseServer' },
-        },
-      };
+      // WSL: Windows 側の PowerShell で再生（最も確実）
+      // \\wsl$\<distro>\<path> 形式で Windows からアクセス
+      const distro = process.env.WSL_DISTRO_NAME || 'Ubuntu';
+      const winPath = '\\\\wsl$\\' + distro + filePath.replace(/\//g, '\\');
+      return this.getPowerShellCommand(winPath, volume);
     }
 
-    // ネイティブ Linux: paplay を使用
+    // ネイティブ Linux: mpg123 を使用（sudo apt install mpg123）
     return {
-      command: 'paplay',
-      args: [filePath, `--volume=${Math.round(volume * 65536)}`],
+      command: 'mpg123',
+      args: ['-q', '-f', String(Math.round(volume * 32768)), filePath],
+      options: {},
+    };
+  }
+
+  /**
+   * PowerShell で MediaPlayer を使用してサウンドを再生するコマンドを生成
+   */
+  private getPowerShellCommand(
+    filePath: string,
+    volume: number,
+  ): { command: string; args: string[]; options: { env?: NodeJS.ProcessEnv } } {
+    const psScript = [
+      'Add-Type -AssemblyName presentationCore;',
+      '$p = New-Object System.Windows.Media.MediaPlayer;',
+      `$p.Volume = ${volume};`,
+      `$p.Open([Uri]'${filePath}');`,
+      'Start-Sleep -Seconds 1;',
+      '$p.Play();',
+      'Start-Sleep -Seconds 3;',
+    ].join(' ');
+    const cmd = this.isWSL() ? 'powershell.exe' : 'powershell';
+    return {
+      command: cmd,
+      args: ['-NoProfile', '-Command', psScript],
       options: {},
     };
   }

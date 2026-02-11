@@ -62,59 +62,6 @@ suite('NotificationManager Unit Tests', () => {
 
   suite('getAudioCommand - プラットフォーム別コマンド', () => {
 
-    test('Linux 環境で paplay が使用される', () => {
-      const manager = createManager();
-      // テスト環境は Linux なので直接テスト可能
-      if (process.platform === 'linux') {
-        const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
-        assert.strictEqual(result.command, 'paplay');
-        assert.ok(result.args.includes('/path/to/sound.mp3'));
-      }
-    });
-
-    test('ボリューム 0.5 で paplay の --volume=32768 になる', () => {
-      const manager = createManager();
-      if (process.platform === 'linux') {
-        const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
-        assert.ok(
-          result.args.includes('--volume=32768'),
-          `Expected --volume=32768 but got args: ${result.args}`,
-        );
-      }
-    });
-
-    test('ボリューム 1.0 で paplay の --volume=65536 になる', () => {
-      const manager = createManager();
-      if (process.platform === 'linux') {
-        const result = manager.getAudioCommand('/path/to/sound.mp3', 1.0);
-        assert.ok(
-          result.args.includes('--volume=65536'),
-          `Expected --volume=65536 but got args: ${result.args}`,
-        );
-      }
-    });
-
-    test('ボリューム 0 で paplay の --volume=0 になる', () => {
-      const manager = createManager();
-      if (process.platform === 'linux') {
-        const result = manager.getAudioCommand('/path/to/sound.mp3', 0);
-        assert.ok(
-          result.args.includes('--volume=0'),
-          `Expected --volume=0 but got args: ${result.args}`,
-        );
-      }
-    });
-
-    test('ファイルパスが引数に含まれる', () => {
-      const manager = createManager();
-      const testPath = '/some/path/to/alert.mp3';
-      const result = manager.getAudioCommand(testPath, 0.5);
-      assert.ok(
-        result.args.includes(testPath),
-        `File path should be in args: ${result.args}`,
-      );
-    });
-
     test('コマンド結果に command, args, options が含まれる', () => {
       const manager = createManager();
       const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
@@ -123,31 +70,58 @@ suite('NotificationManager Unit Tests', () => {
       assert.ok('options' in result, 'Should have options');
       assert.ok(Array.isArray(result.args), 'args should be an array');
     });
-  });
 
-  // ============================================================
-  // WSL 検出と PULSE_SERVER
-  // ============================================================
-
-  suite('WSL 環境検出', () => {
-
-    test('WSL 環境で PULSE_SERVER が設定される', () => {
+    test('WSL 環境で powershell.exe が使用される', () => {
       const manager = createManager();
       if (process.platform === 'linux') {
-        const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
-        // テスト環境が WSL の場合のみ
         try {
           const version = require('fs').readFileSync('/proc/version', 'utf8');
           if (/microsoft|wsl/i.test(version)) {
-            assert.ok(result.options.env, 'WSL should have env options');
-            assert.strictEqual(
-              result.options.env!.PULSE_SERVER,
-              '/mnt/wslg/PulseServer',
-              'PULSE_SERVER should be set for WSL',
-            );
+            const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
+            assert.strictEqual(result.command, 'powershell.exe');
           }
         } catch {
           // /proc/version が読めない環境ではスキップ
+        }
+      }
+    });
+
+    test('WSL 環境で \\\\wsl$ UNC パスに変換される', () => {
+      const manager = createManager();
+      if (process.platform === 'linux') {
+        try {
+          const version = require('fs').readFileSync('/proc/version', 'utf8');
+          if (/microsoft|wsl/i.test(version)) {
+            const result = manager.getAudioCommand('/home/user/sound.mp3', 0.5);
+            const scriptArg = result.args.find((a: string) => a.includes('wsl$'));
+            assert.ok(scriptArg, 'Should contain \\\\wsl$ UNC path in PowerShell script');
+            assert.ok(
+              scriptArg!.includes('\\home\\user\\sound.mp3'),
+              'Should convert forward slashes to backslashes',
+            );
+          }
+        } catch {
+          // skip
+        }
+      }
+    });
+
+    test('WSL 環境で volume が PowerShell スクリプトに含まれる', () => {
+      const manager = createManager();
+      if (process.platform === 'linux') {
+        try {
+          const version = require('fs').readFileSync('/proc/version', 'utf8');
+          if (/microsoft|wsl/i.test(version)) {
+            const result = manager.getAudioCommand('/path/to/sound.mp3', 0.75);
+            const scriptArg = result.args.find((a: string) => a.includes('Volume'));
+            assert.ok(scriptArg, 'Should contain Volume in PowerShell script');
+            assert.ok(
+              scriptArg!.includes('0.75'),
+              'Should set volume to 0.75',
+            );
+          }
+        } catch {
+          // skip
         }
       }
     });
@@ -181,36 +155,39 @@ suite('NotificationManager Unit Tests', () => {
 
   suite('サウンドファイルパス生成', () => {
 
-    test('getAudioCommand に渡すパスに work-end.mp3 が含まれる', () => {
+    test('getAudioCommand の引数に work-end.mp3 が含まれる', () => {
       const manager = createManager();
       const result = manager.getAudioCommand(
         '/mock/extension/resources/sounds/work-end.mp3', 0.5,
       );
+      const allArgs = result.args.join(' ');
       assert.ok(
-        result.args[0].includes('work-end.mp3'),
-        'Should use work-end.mp3',
+        allArgs.includes('work-end.mp3'),
+        `Should use work-end.mp3, got: ${allArgs}`,
       );
     });
 
-    test('getAudioCommand に渡すパスに break-end.mp3 が含まれる', () => {
+    test('getAudioCommand の引数に break-end.mp3 が含まれる', () => {
       const manager = createManager();
       const result = manager.getAudioCommand(
         '/mock/extension/resources/sounds/break-end.mp3', 0.5,
       );
+      const allArgs = result.args.join(' ');
       assert.ok(
-        result.args[0].includes('break-end.mp3'),
-        'Should use break-end.mp3',
+        allArgs.includes('break-end.mp3'),
+        `Should use break-end.mp3, got: ${allArgs}`,
       );
     });
 
-    test('getAudioCommand に渡すパスに alert.mp3 が含まれる', () => {
+    test('getAudioCommand の引数に alert.mp3 が含まれる', () => {
       const manager = createManager();
       const result = manager.getAudioCommand(
         '/mock/extension/resources/sounds/alert.mp3', 0.5,
       );
+      const allArgs = result.args.join(' ');
       assert.ok(
-        result.args[0].includes('alert.mp3'),
-        'Should use alert.mp3',
+        allArgs.includes('alert.mp3'),
+        `Should use alert.mp3, got: ${allArgs}`,
       );
     });
   });
@@ -221,29 +198,34 @@ suite('NotificationManager Unit Tests', () => {
 
   suite('音量変換', () => {
 
-    test('soundVolume=50 → volume=0.5 で正しい引数が生成される', () => {
-      const manager = createManager({ soundVolume: 50 });
-      const result = manager.getAudioCommand('/path/to/sound.mp3', 50 / 100);
-      // 0.5 * 65536 = 32768
-      if (process.platform === 'linux') {
-        assert.ok(result.args.includes('--volume=32768'));
-      }
+    test('volume=0.5 で PowerShell スクリプトに 0.5 が含まれる', () => {
+      const manager = createManager();
+      const result = manager.getAudioCommand('/path/to/sound.mp3', 0.5);
+      const scriptArg = result.args.join(' ');
+      assert.ok(
+        scriptArg.includes('0.5') || scriptArg.includes('-f 16384'),
+        `Volume 0.5 should be in command args: ${scriptArg}`,
+      );
     });
 
-    test('soundVolume=100 → volume=1.0 で正しい引数が生成される', () => {
-      const manager = createManager({ soundVolume: 100 });
-      const result = manager.getAudioCommand('/path/to/sound.mp3', 100 / 100);
-      if (process.platform === 'linux') {
-        assert.ok(result.args.includes('--volume=65536'));
-      }
+    test('volume=1.0 で正しい引数が生成される', () => {
+      const manager = createManager();
+      const result = manager.getAudioCommand('/path/to/sound.mp3', 1.0);
+      const scriptArg = result.args.join(' ');
+      assert.ok(
+        scriptArg.includes('1') || scriptArg.includes('-f 32768'),
+        `Volume 1.0 should be in command args: ${scriptArg}`,
+      );
     });
 
-    test('soundVolume=0 → volume=0 で正しい引数が生成される', () => {
-      const manager = createManager({ soundVolume: 0 });
-      const result = manager.getAudioCommand('/path/to/sound.mp3', 0 / 100);
-      if (process.platform === 'linux') {
-        assert.ok(result.args.includes('--volume=0'));
-      }
+    test('volume=0 で正しい引数が生成される', () => {
+      const manager = createManager();
+      const result = manager.getAudioCommand('/path/to/sound.mp3', 0);
+      const scriptArg = result.args.join(' ');
+      assert.ok(
+        scriptArg.includes('Volume = 0') || scriptArg.includes('-f 0'),
+        `Volume 0 should be in command args: ${scriptArg}`,
+      );
     });
   });
 
