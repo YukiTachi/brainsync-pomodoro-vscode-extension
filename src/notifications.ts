@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { execFile, execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getNotificationConfig, getFatigueAlertConfig, AlertState, SessionRecord } from './config';
+import { getNotificationConfig, getFatigueAlertConfig, getTimerConfig, AlertState, SessionRecord } from './config';
 import { getFatigueLevel, openDiagnosisPage, formatMinutes, getTodayDateStr } from './utils';
 import { Storage } from './storage';
 
@@ -43,36 +43,39 @@ export class NotificationManager {
     longBreakInterval: number,
     fatigueScore: number,
   ): Promise<void> {
+    await this.playSound('work-end');
+
     const config = getNotificationConfig();
     if (!config.enabled) {return;}
 
-    await this.playSound('work-end');
-
+    const timerConfig = getTimerConfig();
     const isLongBreakDue = currentSetIndex > longBreakInterval;
     const workDuration = session.duration;
 
     if (isLongBreakDue) {
       // 4セット完了
       const level = getFatigueLevel(fatigueScore);
+      const breakLabel = `${timerConfig.longBreak}分休憩する`;
       const selection = await vscode.window.showInformationMessage(
         `🌟 ${longBreakInterval}セット完了！素晴らしい！\n推定脳疲労スコア: ${fatigueScore}点 ${level.emoji}`,
-        '15分休憩する',
+        breakLabel,
         '詳しい診断を受ける',
       );
 
-      if (selection === '15分休憩する') {
+      if (selection === breakLabel) {
         this.callbacks.onStartBreak(true);
       } else if (selection === '詳しい診断を受ける') {
         openDiagnosisPage('session_complete');
       }
     } else {
+      const breakLabel = `${timerConfig.shortBreak}分休憩する`;
       const selection = await vscode.window.showInformationMessage(
         `🎉 お疲れ様でした！${workDuration}分の集中、完了しました`,
-        '5分休憩する',
+        breakLabel,
         '休憩をスキップ',
       );
 
-      if (selection === '5分休憩する') {
+      if (selection === breakLabel) {
         this.callbacks.onStartBreak(false);
       } else if (selection === '休憩をスキップ') {
         this.callbacks.onSkipBreak();
@@ -84,10 +87,10 @@ export class NotificationManager {
    * 休憩終了通知
    */
   async notifyBreakComplete(): Promise<void> {
+    await this.playSound('break-end');
+
     const config = getNotificationConfig();
     if (!config.enabled) {return;}
-
-    await this.playSound('break-end');
 
     const selection = await vscode.window.showInformationMessage(
       '⚡ リフレッシュできましたか？\n次のセッションを始めましょう',
@@ -110,9 +113,6 @@ export class NotificationManager {
     if (!alertConfig.enabled) {return;}
     if (fatigueScore < alertConfig.threshold) {return;}
 
-    const notifConfig = getNotificationConfig();
-    if (!notifConfig.enabled) {return;}
-
     // 重複防止チェック
     const alertState = this.storage.getAlertState();
     const today = getTodayDateStr();
@@ -132,6 +132,9 @@ export class NotificationManager {
     await this.storage.saveAlertState(newAlertState);
 
     await this.playSound('alert');
+
+    const notifConfig = getNotificationConfig();
+    if (!notifConfig.enabled) {return;}
 
     const level = getFatigueLevel(fatigueScore);
     const selection = await vscode.window.showWarningMessage(
@@ -158,7 +161,7 @@ export class NotificationManager {
     try {
       const soundFile = type === 'alert' ? 'alert.mp3' : `${type}.mp3`;
       const soundPath = vscode.Uri.joinPath(
-        this.extensionUri, 'resources', 'sounds', soundFile,
+        this.extensionUri, 'resources', 'sounds', config.soundFile, soundFile,
       ).fsPath;
 
       const volume = config.soundVolume / 100;

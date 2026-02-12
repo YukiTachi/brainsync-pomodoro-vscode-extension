@@ -347,8 +347,9 @@ function recordSession(session: SessionRecord): void {
 
     // ステータスバーの脳疲労アラート表示
     const alertConfig = vscode.workspace.getConfiguration('brainsync');
+    const alertEnabled = alertConfig.get<boolean>('fatigueAlertEnabled', true);
     const threshold = alertConfig.get<number>('fatigueAlertThreshold', 21);
-    statusBar.setFatigueAlert(stats.today.fatigueScore >= threshold);
+    statusBar.setFatigueAlert(alertEnabled && stats.today.fatigueScore >= threshold);
   } catch (error) {
     outputChannel.appendLine(
       `[${new Date().toISOString()}] ERROR: Failed to record session - ${error}`
