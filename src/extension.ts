@@ -300,14 +300,6 @@ function handleWorkComplete(session: SessionRecord): void {
   // 脳疲労アラートチェック
   notificationManager.checkAndNotifyFatigueAlert(stats.today.fatigueScore);
 
-  // 長い休憩サイクル後にcurrentSetIndexをリセット
-  if (isLongBreakDue) {
-    // タイマー内部で管理されるが、明示的に状態を更新
-    const timerData = timer.getTimerData();
-    timerData.currentSetIndex = 1;
-    storage.saveTimerData(timerData);
-  }
-
   // 自動休憩開始
   if (config.autoStartBreak) {
     // 通知のボタン選択を待たずに自動で休憩開始
