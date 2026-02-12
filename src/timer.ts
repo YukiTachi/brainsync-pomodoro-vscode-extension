@@ -325,6 +325,12 @@ export class Timer {
     if (isWork) {
       this.data.currentSetIndex++;
       this.events.onWorkComplete(record);
+
+      // 長い休憩サイクル完了後にcurrentSetIndexをリセット
+      // NOTE: onWorkComplete内でイベントハンドラがcurrentSetIndexを参照した後にリセットする
+      if (this.data.currentSetIndex > this.config.longBreakInterval) {
+        this.data.currentSetIndex = 1;
+      }
     } else {
       this.events.onBreakComplete(record);
     }
