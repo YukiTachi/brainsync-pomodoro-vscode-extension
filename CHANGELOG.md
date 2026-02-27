@@ -2,6 +2,11 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [0.1.1] - 2026-02-27
+
+### Changed
+- 連絡先メールアドレスを contact@donut-service.com に変更
+
 ## [0.1.0] - 2026-02-11
 
 ### Added

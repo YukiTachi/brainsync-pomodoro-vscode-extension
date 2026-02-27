@@ -183,7 +183,7 @@ MIT License - 詳細は [LICENSE](LICENSE) を参照
 
 **Donut Service**
 - Website: https://donut-service.com
-- Email: info@donut-service.com
+- Email: contact@donut-service.com
 
 ## リンク
 

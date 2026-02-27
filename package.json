@@ -2,11 +2,11 @@
   "name": "brainsync-focus-timer",
   "displayName": "BrainSync Focus Timer",
   "description": "エンジニアの脳疲労を科学するポモドーロタイマー - 30分集中 + 統計 + 脳疲労推定",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "donut-service",
   "author": {
     "name": "Donut Service",
-    "email": "info@donut-service.com",
+    "email": "contact@donut-service.com",
     "url": "https://donut-service.com"
   },
   "icon": "resources/icons/brainsync-icon.png",
