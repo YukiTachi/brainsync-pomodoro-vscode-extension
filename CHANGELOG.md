@@ -2,6 +2,14 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [0.1.2] - 2026-02-28
+
+### Fixed
+- ステータスバーの操作説明を実際の動作（メニュー表示）に合わせて修正
+
+### Added
+- READMEに未記載だった設定項目を追加（自動休憩開始、自動作業開始、脳疲労アラート）
+
 ## [0.1.1] - 2026-02-27
 
 ### Changed
