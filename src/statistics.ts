@@ -155,12 +155,15 @@ export function calculateBreakSkipRate(history: SessionRecord[]): number {
 // ============================================================
 
 /**
- * 今日の統計を更新
+ * 日付が変わっていれば today を当日分にロールオーバーする
+ *
+ * 前日分に活動があれば dailyStatsHistory へ退避し、today を当日の空データにリセットする。
+ * セッション完了時だけでなく、統計の表示・エクスポートなど「読み取り」経路でも
+ * 当日のデータを正しく見せるために呼び出す。
  */
-export function updateTodayStats(stats: Statistics, newSession: SessionRecord): Statistics {
+export function rolloverDailyStats(stats: Statistics): Statistics {
   const today = getTodayDateStr();
 
-  // 日付が変わった場合
   if (stats.today.date !== today) {
     if (stats.today.date && (stats.today.sessions > 0 || stats.today.interruptedSessions > 0)) {
       stats.dailyStatsHistory.push({ ...stats.today });
@@ -170,6 +173,16 @@ export function updateTodayStats(stats: Statistics, newSession: SessionRecord): 
     }
     stats.today = createDefaultDailyStats(today);
   }
+
+  return stats;
+}
+
+/**
+ * 今日の統計を更新
+ */
+export function updateTodayStats(stats: Statistics, newSession: SessionRecord): Statistics {
+  // 日付が変わっていればロールオーバー
+  rolloverDailyStats(stats);
 
   // セッション記録を追加
   if (newSession.type === 'work') {
@@ -203,6 +216,9 @@ export function updateTodayStats(stats: Statistics, newSession: SessionRecord): 
  * 週次統計を更新
  */
 export function updateWeeklyStats(stats: Statistics): Statistics {
+  // 表示・エクスポート経路でも当日のデータを正しく見せるためロールオーバー
+  rolloverDailyStats(stats);
+
   const today = new Date();
   const weekStart = getWeekStart(today);
   const weekEnd = getWeekEnd(today);

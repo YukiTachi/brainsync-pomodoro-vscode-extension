@@ -2,6 +2,14 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [0.1.3] - 2026-06-06
+
+### Fixed
+- 日付が変わった後も「今日の記録」に前日分の完了セット数が表示され続けるバグを修正（統計表示・CSVエクスポート時にも当日へロールオーバーするように変更）
+
+### Added
+- 各モジュール（utils, statistics, config, storage, timer）のユニットテストを追加
+
 ## [0.1.2] - 2026-02-28
 
 ### Fixed
