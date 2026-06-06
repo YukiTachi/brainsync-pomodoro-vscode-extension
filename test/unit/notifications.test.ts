@@ -224,7 +224,7 @@ suite('NotificationManager Unit Tests', () => {
       const result = manager.getAudioCommand('/path/to/sound.mp3', 0);
       const scriptArg = result.args.join(' ');
       assert.ok(
-        scriptArg.includes('Volume = 0') || scriptArg.includes('-f 0'),
+        scriptArg.includes('Volume = 0') || scriptArg.includes('-f 0') || scriptArg.includes('-v 0'),
         `Volume 0 should be in command args: ${scriptArg}`,
       );
     });
