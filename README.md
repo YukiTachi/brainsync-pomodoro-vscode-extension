@@ -2,9 +2,9 @@
 
 エンジニアの脳疲労を科学するポモドーロタイマー
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/donut-service.brainsync-focus-timer)](https://marketplace.visualstudio.com/items?itemName=donut-service.brainsync-focus-timer)
-[![Downloads](https://img.shields.io/visual-studio-marketplace/d/donut-service.brainsync-focus-timer)](https://marketplace.visualstudio.com/items?itemName=donut-service.brainsync-focus-timer)
-[![Rating](https://img.shields.io/visual-studio-marketplace/r/donut-service.brainsync-focus-timer)](https://marketplace.visualstudio.com/items?itemName=donut-service.brainsync-focus-timer)
+[![Open VSX Version](https://img.shields.io/open-vsx/v/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
+[![Open VSX Downloads](https://img.shields.io/open-vsx/dt/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
+[![Open VSX Rating](https://img.shields.io/open-vsx/rating/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
 
 ## 対応エディタ
 
