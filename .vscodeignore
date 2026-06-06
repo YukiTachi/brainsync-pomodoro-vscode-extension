@@ -10,7 +10,12 @@ resources/icons/*.svg
 .gitignore
 .github/**
 tsconfig.json
-*.map
+**/*.map
 .eslintrc.json
+.specstory/**
+.claude/**
+.cursorindexingignore
+.cursorignore
+*.vsix
 **/*.ts
-!out/**/*.js
+!out/src/**/*.js
