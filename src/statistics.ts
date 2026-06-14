@@ -228,8 +228,9 @@ export function updateWeeklyStats(stats: Statistics): Statistics {
   let totalFocusTime = 0;
 
   for (let i = 0; i < 7; i++) {
-    const date = new Date(weekStart);
-    date.setDate(weekStart.getDate() + i);
+    // UTC 基準で 1 日ずつ進める（weekStart は UTC 深夜）。
+    // ローカルの setDate を使うと UTC への変換時に日付がずれるため使わない。
+    const date = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
     const dateStr = date.toISOString().split('T')[0];
 
     let dayStats: DailyStats;

@@ -82,6 +82,10 @@
       {
         "command": "brainsync.settings",
         "title": "BrainSync: 設定"
+      },
+      {
+        "command": "brainsync.disableDnd",
+        "title": "BrainSync: 通知抑制を解除"
       }
     ],
     "configuration": {
@@ -163,6 +167,11 @@
           "minimum": 15,
           "maximum": 30,
           "description": "脳疲労アラート閾値（点）"
+        },
+        "brainsync.focusDoNotDisturb": {
+          "type": "boolean",
+          "default": false,
+          "description": "作業中はVS Codeの通知（他拡張のトースト等）を自動で抑制する（Do Not Disturb）。休憩・終了時に自動解除されます。"
         }
       }
     }

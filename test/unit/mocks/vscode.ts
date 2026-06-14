@@ -100,9 +100,28 @@ export const workspace = {
 // ============================================================
 // commands
 // ============================================================
+
+// executeCommand のスパイ（呼び出し記録 + カスタム実装の差し込み）
+export let _executeCommandCalls: { command: string; args: any[] }[] = [];
+let _executeCommandImpl: ((command: string, ...args: any[]) => Promise<any>) | null = null;
+
+export function _setExecuteCommandImpl(
+  fn: ((command: string, ...args: any[]) => Promise<any>) | null,
+): void {
+  _executeCommandImpl = fn;
+}
+
+export function _resetCommands(): void {
+  _executeCommandCalls = [];
+  _executeCommandImpl = null;
+}
+
 export const commands = {
-  executeCommand: async (_command: string, ..._args: any[]): Promise<any> => {
-    // noop in tests
+  executeCommand: async (command: string, ...args: any[]): Promise<any> => {
+    _executeCommandCalls.push({ command, args });
+    if (_executeCommandImpl) {
+      return _executeCommandImpl(command, ...args);
+    }
     return undefined;
   },
 };

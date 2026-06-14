@@ -120,43 +120,45 @@ suite('utils Unit Tests', () => {
   // getWeekStart / getWeekEnd
   // ----------------------------------------------------------
   suite('getWeekStart / getWeekEnd', () => {
-    test('週の開始は月曜日（getDay()===1）', () => {
+    // NOTE: 週の境界は UTC 基準（アプリの日付キーが UTC のため）。TZ 非依存にするため
+    //       入力は 'Z' 付き UTC で構築し、検証も getUTC* で行う。
+    test('週の開始は月曜日（getUTCDay()===1）', () => {
       // 適当な複数の曜日で検証
       for (const iso of ['2024-01-01', '2024-03-13', '2024-12-29', '2025-06-06']) {
-        const start = getWeekStart(new Date(iso + 'T12:00:00'));
-        assert.strictEqual(start.getDay(), 1, `${iso} の週開始は月曜であるべき`);
+        const start = getWeekStart(new Date(iso + 'T12:00:00Z'));
+        assert.strictEqual(start.getUTCDay(), 1, `${iso} の週開始は月曜であるべき`);
       }
     });
 
-    test('週の開始は 00:00:00 にリセットされる', () => {
-      const start = getWeekStart(new Date('2024-06-06T15:42:30'));
-      assert.strictEqual(start.getHours(), 0);
-      assert.strictEqual(start.getMinutes(), 0);
-      assert.strictEqual(start.getSeconds(), 0);
-      assert.strictEqual(start.getMilliseconds(), 0);
+    test('週の開始は 00:00:00 UTC にリセットされる', () => {
+      const start = getWeekStart(new Date('2024-06-06T15:42:30Z'));
+      assert.strictEqual(start.getUTCHours(), 0);
+      assert.strictEqual(start.getUTCMinutes(), 0);
+      assert.strictEqual(start.getUTCSeconds(), 0);
+      assert.strictEqual(start.getUTCMilliseconds(), 0);
     });
 
     test('週の終了は日曜日（開始の6日後）', () => {
-      const ref = new Date('2024-06-06T12:00:00');
+      const ref = new Date('2024-06-06T12:00:00Z');
       const start = getWeekStart(ref);
       const end = getWeekEnd(ref);
-      assert.strictEqual(end.getDay(), 0, '週終了は日曜であるべき');
+      assert.strictEqual(end.getUTCDay(), 0, '週終了は日曜であるべき');
       const diffDays = Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000));
       assert.strictEqual(diffDays, 6, '開始と終了は6日差であるべき');
     });
 
     test('日曜を渡しても同じ週の月曜を返す（ISO 8601）', () => {
-      // 2024-06-09 は日曜日
-      const sunday = new Date('2024-06-09T12:00:00');
+      // 2024-06-09 は日曜日（UTC）
+      const sunday = new Date('2024-06-09T12:00:00Z');
       const start = getWeekStart(sunday);
-      assert.strictEqual(start.getDay(), 1);
+      assert.strictEqual(start.getUTCDay(), 1);
       // 同じ週の月曜 = 2024-06-03
-      assert.strictEqual(start.getDate(), 3);
-      assert.strictEqual(start.getMonth(), 5); // 6月 (0-indexed)
+      assert.strictEqual(start.getUTCDate(), 3);
+      assert.strictEqual(start.getUTCMonth(), 5); // 6月 (0-indexed)
     });
 
     test('引数のDateを破壊しない', () => {
-      const original = new Date('2024-06-06T12:00:00');
+      const original = new Date('2024-06-06T12:00:00Z');
       const copy = new Date(original.getTime());
       getWeekStart(original);
       getWeekEnd(original);

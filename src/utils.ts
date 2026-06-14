@@ -45,13 +45,18 @@ export function getTodayDateStr(): string {
 
 /**
  * 週の開始日（月曜日）を取得（ISO 8601準拠）
+ *
+ * NOTE: アプリの日付キーは getTodayDateStr() を含め一貫して UTC（toISOString）基準のため、
+ *       週の境界計算も UTC で行う。ローカル基準で計算すると UTC+offset の TZ（例: JST）で
+ *       ローカル深夜が UTC では前日へ roll back し、週ウィンドウが1日ずれて当日のデータを
+ *       取りこぼす（updateWeeklyStats）。
  */
 export function getWeekStart(date: Date): Date {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  d.setUTCDate(diff);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { Timer, TimerEvents } from './timer';
 import { StatusBar } from './statusBar';
+import { FocusDndManager } from './focusDnd';
 import { NotificationManager, NotificationCallbacks } from './notifications';
 import { StatsViewProvider } from './webview/statsViewProvider';
 import { Storage } from './storage';
@@ -19,6 +20,7 @@ import { openDiagnosisPage, getTodayDateStr } from './utils';
 
 let timer: Timer;
 let statusBar: StatusBar;
+let focusDnd: FocusDndManager;
 let notificationManager: NotificationManager;
 let statsViewProvider: StatsViewProvider;
 let storage: Storage;
@@ -34,6 +36,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // ステータスバー初期化
   statusBar = new StatusBar();
 
+  // フォーカス中の通知抑制（Do Not Disturb）マネージャ
+  // NOTE: timer.restore() より前に生成しておく必要がある。
+  //       restore が working へ復帰する際に onStateChange(working) 経由で DND を ON にするため。
+  focusDnd = new FocusDndManager(outputChannel);
+
   // 統計Webview
   statsViewProvider = new StatsViewProvider(context.extensionUri);
 
@@ -44,7 +51,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
 
     onWorkComplete: (session: SessionRecord) => {
-      handleWorkComplete(session);
+      void handleWorkComplete(session);
     },
 
     onBreakComplete: (session: SessionRecord) => {
@@ -55,6 +62,8 @@ export function activate(context: vscode.ExtensionContext): void {
       if (state === 'idle') {
         statusBar.update(0, state);
       }
+      // 作業中だけ DND を ON、それ以外は OFF に同期（fire-and-forget で可）
+      void focusDnd.syncForState(state);
     },
   };
 
@@ -192,6 +201,15 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
+  // 通知抑制を解除（エスケープハッチ）
+  // クラッシュ等で DND が ON のまま残った場合に、内部仮定に関わらず無条件で解除する。
+  context.subscriptions.push(
+    vscode.commands.registerCommand('brainsync.disableDnd', async () => {
+      await focusDnd.forceDisable();
+      vscode.window.showInformationMessage('通知抑制（Do Not Disturb）を解除しました');
+    })
+  );
+
   // 設定を開く
   context.subscriptions.push(
     vscode.commands.registerCommand('brainsync.settings', () => {
@@ -259,6 +277,8 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeConfiguration((e) => {
       if (e.affectsConfiguration('brainsync')) {
         timer.reloadConfig();
+        // 作業中に focusDoNotDisturb が ON/OFF された場合に即時追従する
+        void focusDnd.syncForState(timer.getState());
         outputChannel.appendLine(`[${new Date().toISOString()}] Configuration changed`);
       }
     })
@@ -271,6 +291,7 @@ export function activate(context: vscode.ExtensionContext): void {
     dispose: () => {
       timer.dispose();
       statusBar.dispose();
+      focusDnd.dispose();
       notificationManager.dispose();
       statsViewProvider.dispose();
       outputChannel.dispose();
@@ -282,7 +303,11 @@ export function activate(context: vscode.ExtensionContext): void {
 // セッション完了ハンドラ
 // ============================================================
 
-function handleWorkComplete(session: SessionRecord): void {
+async function handleWorkComplete(session: SessionRecord): Promise<void> {
+  // info 通知が DND で抑制されないよう、通知の前に必ず解除する（await で反映を待つ）。
+  // onStateChange(idle) による解除は通知より後に発火し競合するため、ここで明示的に行う。
+  await focusDnd.ensureOff();
+
   recordSession(session);
 
   const stats = storage.getStatistics();
