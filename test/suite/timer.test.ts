@@ -59,32 +59,33 @@ suite('Timer Utility Test Suite', () => {
   // getWeekStart / getWeekEnd
   // ============================================================
 
+  // NOTE: 週の境界は UTC 基準。TZ 非依存にするため Date.UTC で構築し getUTC* で検証する。
   suite('getWeekStart', () => {
     test('月曜日は自分自身を返す', () => {
       // 2026-02-09 is a Monday
-      const monday = new Date(2026, 1, 9);
+      const monday = new Date(Date.UTC(2026, 1, 9));
       const result = getWeekStart(monday);
-      assert.strictEqual(result.getDay(), 1); // Monday
+      assert.strictEqual(result.getUTCDay(), 1); // Monday
     });
 
     test('水曜日は月曜日を返す', () => {
       // 2026-02-11 is a Wednesday
-      const wednesday = new Date(2026, 1, 11);
+      const wednesday = new Date(Date.UTC(2026, 1, 11));
       const result = getWeekStart(wednesday);
-      assert.strictEqual(result.getDay(), 1); // Monday
-      assert.strictEqual(result.getDate(), 9);
+      assert.strictEqual(result.getUTCDay(), 1); // Monday
+      assert.strictEqual(result.getUTCDate(), 9);
     });
 
     test('日曜日は前の月曜日を返す', () => {
       // 2026-02-15 is a Sunday
-      const sunday = new Date(2026, 1, 15);
+      const sunday = new Date(Date.UTC(2026, 1, 15));
       const result = getWeekStart(sunday);
-      assert.strictEqual(result.getDay(), 1); // Monday
-      assert.strictEqual(result.getDate(), 9);
+      assert.strictEqual(result.getUTCDay(), 1); // Monday
+      assert.strictEqual(result.getUTCDate(), 9);
     });
 
     test('元のDateオブジェクトを変更しない', () => {
-      const original = new Date(2026, 1, 11);
+      const original = new Date(Date.UTC(2026, 1, 11));
       const originalTime = original.getTime();
       getWeekStart(original);
       assert.strictEqual(original.getTime(), originalTime);
@@ -93,14 +94,14 @@ suite('Timer Utility Test Suite', () => {
 
   suite('getWeekEnd', () => {
     test('月曜日の週の終わりは日曜日', () => {
-      const monday = new Date(2026, 1, 9);
+      const monday = new Date(Date.UTC(2026, 1, 9));
       const result = getWeekEnd(monday);
-      assert.strictEqual(result.getDay(), 0); // Sunday
-      assert.strictEqual(result.getDate(), 15);
+      assert.strictEqual(result.getUTCDay(), 0); // Sunday
+      assert.strictEqual(result.getUTCDate(), 15);
     });
 
     test('元のDateオブジェクトを変更しない', () => {
-      const original = new Date(2026, 1, 11);
+      const original = new Date(Date.UTC(2026, 1, 11));
       const originalTime = original.getTime();
       getWeekEnd(original);
       assert.strictEqual(original.getTime(), originalTime);

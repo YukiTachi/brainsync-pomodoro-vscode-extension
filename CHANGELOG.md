@@ -2,6 +2,11 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- UTC より東のタイムゾーン（日本など）で、週次統計に当日のセッションが集計されず、週の内訳が1日ずれるバグを修正（週の境界計算をアプリの日付キー（UTC）基準に統一）
+
 ## [0.1.3] - 2026-06-06
 
 ### Fixed
