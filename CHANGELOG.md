@@ -4,6 +4,10 @@ All notable changes to the "BrainSync Focus Timer" extension will be documented 
 
 ## [Unreleased]
 
+### Added
+- 作業中の通知抑制（Focus Do Not Disturb）: 設定 `brainsync.focusDoNotDisturb`（デフォルト OFF）を有効にすると、作業セッション中だけ VS Code の Do Not Disturb を自動 ON にし、休憩・一時停止・終了時に自動 OFF に戻す
+- コマンド `BrainSync: 通知抑制を解除`: 何らかの理由で通知抑制が残った場合に手動で解除するエスケープハッチ
+
 ### Fixed
 - UTC より東のタイムゾーン（日本など）で、週次統計に当日のセッションが集計されず、週の内訳が1日ずれるバグを修正（週の境界計算をアプリの日付キー（UTC）基準に統一）
 
