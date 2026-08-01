@@ -2,7 +2,7 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
-## [Unreleased]
+## [0.1.5] - 2026-08-02
 
 ### Added
 - Slack 連携（任意）: 設定 `brainsync.slackIntegration` を有効にすると、作業セッション中だけ Slack の通知を一時停止（DND Snooze）し、任意でステータスを「🍅 集中中」に自動設定。休憩・終了時に自動解除。OS非依存で動作
