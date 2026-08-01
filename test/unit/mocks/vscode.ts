@@ -85,6 +85,12 @@ export const window = {
 // ============================================================
 // workspace
 // ============================================================
+export enum ConfigurationTarget {
+  Global = 1,
+  Workspace = 2,
+  WorkspaceFolder = 3,
+}
+
 export const workspace = {
   getConfiguration: (_section?: string) => ({
     get: <T>(key: string, defaultValue?: T): T => {
@@ -93,6 +99,10 @@ export const workspace = {
         return configStore[fullKey] as T;
       }
       return defaultValue as T;
+    },
+    // update は configStore に反映する（テストで slackIntegration=false 化を観測できる）
+    update: async (key: string, value: any, _target?: ConfigurationTarget): Promise<void> => {
+      configStore[key] = value;
     },
   }),
 };

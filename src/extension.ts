@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import { Timer, TimerEvents } from './timer';
 import { StatusBar } from './statusBar';
 import { FocusDndManager } from './focusDnd';
+import { SlackManager, SLACK_TOKEN_KEY } from './slack/slackManager';
+import { HttpsSlackClient, parseScopes } from './slack/slackClient';
 import { NotificationManager, NotificationCallbacks } from './notifications';
 import { StatsViewProvider } from './webview/statsViewProvider';
 import { Storage } from './storage';
@@ -21,6 +23,7 @@ import { openDiagnosisPage, getTodayDateStr } from './utils';
 let timer: Timer;
 let statusBar: StatusBar;
 let focusDnd: FocusDndManager;
+let slack: SlackManager;
 let notificationManager: NotificationManager;
 let statsViewProvider: StatsViewProvider;
 let storage: Storage;
@@ -40,6 +43,9 @@ export function activate(context: vscode.ExtensionContext): void {
   // NOTE: timer.restore() より前に生成しておく必要がある。
   //       restore が working へ復帰する際に onStateChange(working) 経由で DND を ON にするため。
   focusDnd = new FocusDndManager(outputChannel);
+
+  // Slack 連携マネージャ（focusDnd と同様に timer.restore() より前に生成する）
+  slack = new SlackManager(context.secrets, new HttpsSlackClient(), outputChannel);
 
   // 統計Webview
   statsViewProvider = new StatsViewProvider(context.extensionUri);
@@ -64,6 +70,8 @@ export function activate(context: vscode.ExtensionContext): void {
       }
       // 作業中だけ DND を ON、それ以外は OFF に同期（fire-and-forget で可）
       void focusDnd.syncForState(state);
+      // Slack 連携も同様に状態へ同期
+      void slack.syncForState(state, timer.getRemainingTime());
     },
   };
 
@@ -210,6 +218,54 @@ export function activate(context: vscode.ExtensionContext): void {
     })
   );
 
+  // Slack連携を設定（トークン入力 → 検証 → SecretStorage 保存）
+  context.subscriptions.push(
+    vscode.commands.registerCommand('brainsync.connectSlack', async () => {
+      const token = await vscode.window.showInputBox({
+        prompt: 'Slack User OAuth Token（xoxp-...）を貼り付けてください',
+        password: true,
+        ignoreFocusOut: true,
+        placeHolder: 'xoxp-...',
+      });
+      if (!token) { return; }
+
+      // auth.test でトークン検証 + x-oauth-scopes でスコープ検証
+      const slackClient = new HttpsSlackClient();
+      const res = await slackClient.call('auth.test', token);
+      if (!res.ok) {
+        vscode.window.showErrorMessage(`Slackトークンの検証に失敗しました（${res.error ?? 'unknown'}）`);
+        return;
+      }
+
+      const scopes = parseScopes(res.headers?.['x-oauth-scopes']);
+      const required = ['dnd:write', 'users.profile:write'];
+      const missing = required.filter((s) => !scopes.has(s));
+      // ヘッダが取得できない環境ではスコープ検証をスキップ（実行時 missing_scope で二重防御）
+      if (scopes.size > 0 && missing.length > 0) {
+        vscode.window.showErrorMessage(
+          `必要な権限が不足しています: ${missing.join(', ')}。Slack App の User Token Scopes を確認してください。`
+        );
+        return;
+      }
+
+      await context.secrets.store(SLACK_TOKEN_KEY, token);
+      slack.resetAuthFailureFlag();
+      const team = typeof res.team === 'string' ? res.team : 'Slack';
+      vscode.window.showInformationMessage(`${team} として接続しました`);
+      // 既に作業中なら即座に反映
+      void slack.syncForState(timer.getState(), timer.getRemainingTime());
+    })
+  );
+
+  // Slack連携を解除（無条件で Snooze/ステータスを解除 → トークン削除）
+  context.subscriptions.push(
+    vscode.commands.registerCommand('brainsync.disconnectSlack', async () => {
+      await slack.forceClear();
+      await context.secrets.delete(SLACK_TOKEN_KEY);
+      vscode.window.showInformationMessage('Slack連携を解除しました');
+    })
+  );
+
   // 設定を開く
   context.subscriptions.push(
     vscode.commands.registerCommand('brainsync.settings', () => {
@@ -279,6 +335,11 @@ export function activate(context: vscode.ExtensionContext): void {
         timer.reloadConfig();
         // 作業中に focusDoNotDisturb が ON/OFF された場合に即時追従する
         void focusDnd.syncForState(timer.getState());
+        // Slack 関連キーが変わったときだけ再同期する（無関係な設定変更で API を無駄打ちしない）
+        const slackKeys = ['slackIntegration', 'slackSetStatus', 'slackStatusText', 'slackStatusEmoji'];
+        if (slackKeys.some((k) => e.affectsConfiguration(`brainsync.${k}`))) {
+          void slack.syncForState(timer.getState(), timer.getRemainingTime());
+        }
         outputChannel.appendLine(`[${new Date().toISOString()}] Configuration changed`);
       }
     })
@@ -292,6 +353,7 @@ export function activate(context: vscode.ExtensionContext): void {
       timer.dispose();
       statusBar.dispose();
       focusDnd.dispose();
+      slack.dispose();
       notificationManager.dispose();
       statsViewProvider.dispose();
       outputChannel.dispose();
