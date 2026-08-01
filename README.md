@@ -57,6 +57,8 @@ BrainSync Focus Timerは、VS Code互換のすべてのエディタで動作し�
 | `BrainSync: データをエクスポート` | CSV形式でデータを保存 |
 | `BrainSync: 統計をリセット` | 統計データをクリア |
 | `BrainSync: 通知抑制を解除` | 作業中の通知抑制（Do Not Disturb）を手動で解除 |
+| `BrainSync: Slack連携を設定` | Slack トークンを登録して連携を有効化 |
+| `BrainSync: Slack連携を解除` | Slack 連携を解除しトークンを削除 |
 | `BrainSync: 設定` | 設定画面を開く |
 
 ### キーボードショートカット（推奨設定）
@@ -115,9 +117,42 @@ BrainSync Focus Timerは、VS Code互換のすべてのエディタで動作し�
 | 脳疲労アラート | ON | ON/OFF |
 | 脳疲労アラート閾値 | 21点 | 15-30点 |
 | 作業中の通知抑制 (Do Not Disturb) | OFF | ON/OFF |
+| Slack連携 | OFF | ON/OFF |
+| Slackステータス自動設定 | ON | ON/OFF |
+| Slackステータス文言 | 集中中 | 任意の文字列 |
+| Slackステータス絵文字 | :tomato: | 絵文字コード |
 
 > **作業中の通知抑制 (Do Not Disturb)**: ON にすると、作業セッション中だけ VS Code の通知（他拡張のトースト等）を自動で抑制し、休憩・終了時に自動で解除します。OS非依存・セットアップ不要で動作します。
 > 通知抑制中はステータスバー右側のベルアイコンが bell-slash 表示になります。何らかの理由で抑制が残った場合は、コマンド `BrainSync: 通知抑制を解除` で手動解除できます。
+
+## Slack連携（任意）
+
+作業セッション中だけ Slack を自動で「集中モード」にします。通知を一時停止（Do Not Disturb）し、任意でステータスを「🍅 集中中」に設定。休憩・終了時に自動解除します。OS非依存で動作します。
+
+### セットアップ
+
+事前に Slack のトークンを取得して設定する必要があります。
+
+1. [https://api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**（対象ワークスペースを選択）
+2. **OAuth & Permissions** → **User Token Scopes** に次の2つを追加（Bot ではなく **User** 側）:
+   - `dnd:write`（通知の一時停止）
+   - `users.profile:write`（ステータス設定）
+3. **Install to Workspace** → 発行された **User OAuth Token（`xoxp-...`）** をコピー
+4. VS Code / Cursor で コマンド `BrainSync: Slack連携を設定` を実行し、トークンを貼り付け
+5. 設定で **Slack連携** を ON にする
+
+### 動作
+
+- 作業開始 → Slack の通知が一時停止（DND）＋ ステータス「🍅 集中中」を自動設定
+- 終了時刻（〜HH:MM）は Slack が自動で表示します（ステータス文言に時刻は含まれません）
+- 休憩・一時停止・終了 → 自動で解除
+- 解除したいときは コマンド `BrainSync: Slack連携を解除`
+
+### プライバシー
+
+- **トークンは VS Code の SecretStorage（OSキーチェーン）に安全に保管**され、設定ファイルには保存されません。他マシンにも同期されません。
+- 送信先は Slack API（`https://slack.com`）のみで、送信するのは「通知停止時間・ステータス文言・トークン」だけです。**セッション統計や作業内容は一切送信しません**。
+- Slack連携を無効にしている場合は、従来どおり完全にローカルで動作します。
 
 ## インストール
 
@@ -142,13 +177,15 @@ cursor --install-extension donut-service.brainsync-focus-timer
 - タイマーセッション記録（開始時刻、終了時刻、完了/中断状態）
 - 統計データ（日次・週次の集計）
 - 設定情報
+- Slackトークン（Slack連携を使う場合のみ、SecretStorage = OSキーチェーンに保管）
 
-すべてのデータはVS CodeのGlobal Stateに保存され、お使いのコンピューター内に留まります。
+タイマー・統計・設定はVS CodeのGlobal Stateに保存され、お使いのコンピューター内に留まります。Slackトークンは平文の設定ファイルには保存されず、他マシンにも同期されません。
 
 **外部送信データ:**
 - 診断ページへのリンクを開く際、UTMパラメータ（利用元の情報）を付与します
+- **Slack連携を有効にした場合のみ**、Slack API（`https://slack.com`）へ「通知停止時間・ステータス文言・トークン」を送信します
 - 個人を特定する情報は一切送信しません
-- セッションデータや統計データは送信しません
+- セッションデータや統計データは送信しません（Slackにも送りません）
 
 ## セキュリティ
 

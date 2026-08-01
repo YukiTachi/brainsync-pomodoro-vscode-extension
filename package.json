@@ -86,6 +86,14 @@
       {
         "command": "brainsync.disableDnd",
         "title": "BrainSync: 通知抑制を解除"
+      },
+      {
+        "command": "brainsync.connectSlack",
+        "title": "BrainSync: Slack連携を設定"
+      },
+      {
+        "command": "brainsync.disconnectSlack",
+        "title": "BrainSync: Slack連携を解除"
       }
     ],
     "configuration": {
@@ -172,6 +180,26 @@
           "type": "boolean",
           "default": false,
           "description": "作業中はVS Codeの通知（他拡張のトースト等）を自動で抑制する（Do Not Disturb）。休憩・終了時に自動解除されます。"
+        },
+        "brainsync.slackIntegration": {
+          "type": "boolean",
+          "default": false,
+          "description": "作業中はSlackを集中モードにする（通知を一時停止）。休憩・終了時に自動解除されます。事前に「BrainSync: Slack連携を設定」でトークンの設定が必要です。"
+        },
+        "brainsync.slackSetStatus": {
+          "type": "boolean",
+          "default": true,
+          "description": "Slack連携が有効なとき、作業中はSlackのステータスも自動設定する。"
+        },
+        "brainsync.slackStatusText": {
+          "type": "string",
+          "default": "集中中",
+          "description": "作業中に設定するSlackステータスの文言（終了時刻はSlackが自動表示します）。"
+        },
+        "brainsync.slackStatusEmoji": {
+          "type": "string",
+          "default": ":tomato:",
+          "description": "作業中に設定するSlackステータスの絵文字コード（例: :tomato:）。"
         }
       }
     }

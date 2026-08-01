@@ -240,6 +240,20 @@ Extension Development Host で拡張機能を起動した後、以下の項目�
 - [ ] `BrainSync: 通知抑制を解除` を実行すると抑制が解除される（エスケープハッチ）
 - [ ] 設定 `focusDoNotDisturb` を作業中に OFF にすると、その場で抑制が解除される（ON にすると抑制が始まる）
 
+### Slack連携
+
+> 事前に Slack App（User Token Scopes: `dnd:write`, `users.profile:write`）を作成し、`xoxp-` トークンを用意してください（手順は README「Slack連携」参照）。
+
+- [ ] `BrainSync: Slack連携を設定` でトークンを入力 → 「〇〇 として接続しました」が表示される
+- [ ] スコープ不足のトークンを入力すると「権限が不足しています」で保存されない
+- [ ] 設定 `slackIntegration` を `true` にして作業開始 → Slack が DND（通知一時停止）＋ ステータス「🍅 集中中」になる
+- [ ] Slack 側で終了時刻（〜HH:MM）が `status_expiration` から表示される（ステータス文言には時刻が含まれない）
+- [ ] 一時停止 → Slack の DND / ステータスが解除される。再開 → 再設定される
+- [ ] 作業完了 → 解除される
+- [ ] `slackSetStatus` を `false` にすると、ステータスは変えず DND のみ動く
+- [ ] トークンを無効化（Slack でアプリ削除）して作業 → 「トークンが無効」通知が**一度だけ**出て、`slackIntegration` が自動で OFF になる
+- [ ] `BrainSync: Slack連携を解除` → DND / ステータスが消え、トークンが削除される（作業中でなくても解除できる）
+
 ### その他
 
 - [ ] `BrainSync: 脳疲労診断を受ける` で外部ブラウザが開く
