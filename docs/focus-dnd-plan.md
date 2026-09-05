@@ -310,5 +310,4 @@ timer は同期的に `onStateChange(idle)` を発火し `void syncForState('idl
 | ドキュメント | 小 |
 
 実装コスト小・ユーザー全員に効く・セットアップ不要、という費用対効果の高い機能。
-</content>
 </invoke>

@@ -2,6 +2,16 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- マーケットプレースの多言語化（英語対応）: `package.nls.json`（英語・既定）と `package.nls.ja.json`（日本語）を導入し、VS Code Marketplace / Open VSX のページ・検索を英語化。README を英語版（`README.md`）と日本語版（`README.ja.md`）に分離
+- `package.json` の `%key%` と nls ファイルの整合性を検証するユニットテスト（キー不一致による `%key%` の生表示を防止）
+
+### Changed
+- コマンド名・設定名・設定説明が **VS Code の表示言語に追従**するようになった（英語既定・日本語あり）。日本語表示のユーザーには従来どおり日本語で表示される
+- 通知メッセージ・統計 WebView などの実行時文字列は本バージョンでは日本語のまま（後続で対応予定）。英語表示ではコマンド名（英語）と通知文言（日本語）が混在する
+
 ## [0.1.5] - 2026-08-02
 
 ### Added
