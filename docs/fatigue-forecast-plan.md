@@ -28,7 +28,7 @@
 |---|------|------|
 | F1 | `estimateFatigueScore(stats)`（`statistics.ts:19`）は **今日のセッション数 / 今週のセッション数 / 連続日数 / 中断率 / 休憩スキップ率** の5指標から段階加点で算出する純関数。入力は `Statistics` のみ | `stats` を複製して `today.sessions` / `week.totalSessions` を +k した仮データで再計算すれば**先読みが正確に出せる**（新しい推定モデル不要） |
 | F2 | 加点は段階式（今日 6/8/10/12、今週 30/40/50/60、連続 5/7 日）。段階を跨ぐと最大 **+15 点** 跳ぶ一方、**中断率は分母（完了+中断）が増えて下がる**ため、+k で**スコアが現在より下がることもある＝先読みは非単調** | 「あと k セットで閾値到達」は最小の k を 1..lookahead で**線形探索**する（非単調でも「最初に閾値以上になる k」は正しく求まる）。統計画面の見せ方は §4-4 で定義 |
-| F3 | **`updateTodayStats`（`:183`）が `today.fatigueScore` を計算する時点（`:210`）で `stats.week` は更新前**。直後の `updateWeeklyStats`（`:218`）は `week.fatigueScore`（`:255`）を再計算するが **`today.fatigueScore` は更新しない**。結果、`recordSession` 後の **`today.fatigueScore` は「週セッション数が 1 少ない」古い値**のまま残る（既存の潜在バグ） | **「現在スコア」が2系統になり隙間が生じる**: 既存アラートは `today.fatigueScore`（`extension.ts:388`）、素朴な先読みは `estimateFatigueScore(stats)`（新しい値）を見るため、`today.fatigueScore < 閾値 ≤ estimateFatigueScore(stats)`（今回のセッションで週の段階 30/40/50/60 を跨いだとき）に**どちらも出ない**。完了トーストの「X点」と先読みの「現在 Y点」と統計画面も食い違う。→ **根本修正: `updateWeeklyStats` の末尾で `today.fatigueScore` を再計算し 1 系統に統一**（§4-1a）。先読みの「現在」も `today.fatigueScore` を使う |
+| F3 | **`updateTodayStats`（`:183`）が `today.fatigueScore` を計算する時点（`:210`）で `stats.week` は更新前**。直後の `updateWeeklyStats`（`:218`）も、スコア計算を object literal 内（`stats.week` 代入前）で行っていたため **`week.fatigueScore` 自体が週加点を含まない古い値**で、かつ **`today.fatigueScore` は更新しない**。結果、`recordSession` 後の **`today.fatigueScore` は「週セッション数を含まない」古い値**のまま残る（既存の潜在バグ。実装で判明） | **「現在スコア」が2系統になり隙間が生じる**: 既存アラートは `today.fatigueScore`（`extension.ts:388`）、素朴な先読みは `estimateFatigueScore(stats)`（新しい値）を見るため、`today.fatigueScore < 閾値 ≤ estimateFatigueScore(stats)`（今回のセッションで週の段階 30/40/50/60 を跨いだとき）に**どちらも出ない**。完了トーストの「X点」と先読みの「現在 Y点」と統計画面も食い違う。→ **根本修正: `updateWeeklyStats` の末尾で `today.fatigueScore` を再計算し 1 系統に統一**（§4-1a）。先読みの「現在」も `today.fatigueScore` を使う |
 | F4 | 既存アラート `checkAndNotifyFatigueAlert`（`notifications.ts:111`）は `AlertState{lastAlertDate,lastAlertScore}`（`config.ts:88`）で**同日1回、+5点以上で再通知**という頻度制御をしている | 先読みは**別のフィールドで独立に頻度制御**し、既存アラートと干渉させない（§4-3） |
 | F5 | **Focus DND（[[focus-dnd-plan]] C3）**: 作業中（`working`）は VS Code の info/warning トーストが抑制される。`handleWorkComplete`（`extension.ts:368`）は先頭で `ensureOff()` するため、**完了時点では DND が解除済み** | 作業**開始時**に出すトーストは DND に消され得る → **主トリガーは「セッション完了時」**に置く（§3 挙動）。開始時トリガーは v2 で検討 |
 | F6 | 作業開始の入口は4つ（`startTimer` コマンド `:114`、`onSkipBreak` `:83`、`onStartWork` `:86`、`autoStartWork` `:411`）で、すべて `timer.startWork()` に集約 | 開始時に出すなら Timer に `onWorkStart` イベントを1つ足せば4箇所を網羅できる（v2 用の設計メモ） |
@@ -124,14 +124,19 @@ export function sessionsUntilThreshold(
 `updateWeeklyStats`（`statistics.ts:218`）の末尾に 1 行追加し、週更新後の値で `today.fatigueScore` を揃える：
 
 ```ts
-  stats.week = { /* ...既存... */ fatigueScore: estimateFatigueScore(stats), dailyStats };
-  // ★追加: week 更新後の値で today も揃える（today.fatigueScore === estimateFatigueScore(stats) を不変条件にする）
-  stats.today.fatigueScore = stats.week.fatigueScore;
+  stats.week = { /* ...既存... */ fatigueScore: 0, dailyStats };  // fatigueScore はプレースホルダ
+  // ★stats.week を代入した「後」に 1 回だけ計算し、week と today の両方へ同じ値を入れる。
+  //   従来は object literal 内で estimateFatigueScore(stats) を呼んでいたため、代入前の
+  //   古い stats.week（totalSessions が更新前）を読み、week.fatigueScore にも週加点が
+  //   反映されていなかった（潜在バグ）。
+  const currentScore = estimateFatigueScore(stats);
+  stats.week.fatigueScore = currentScore;
+  stats.today.fatigueScore = currentScore;
   return stats;
 ```
 
-- `week.fatigueScore` は同じ `estimateFatigueScore(stats)` の結果なので、代入で不変条件が成立する
-- 影響: `recordSession` 後の `today.fatigueScore` が**週セッション数を正しく含んだ値**になる。既存アラート（`extension.ts:388`）が「週の段階を跨いだ直後」に反応するようになる＝**既存の潜在バグの修正**（CHANGELOG **Fixed**）
+- 代入後に計算するので、`week.fatigueScore` も `today.fatigueScore` も週加点を含む正しい値になり、`today.fatigueScore === estimateFatigueScore(stats) === week.fatigueScore` が不変条件として成立する
+- 影響: `recordSession` 後の `today.fatigueScore` が**週セッション数を正しく含んだ値**になる。既存アラート（`extension.ts:388`）が「週の段階を跨いだ直後」に反応するようになる＝**既存の潜在バグの修正**（CHANGELOG **Fixed**）。週次疲労表示（`week.fatigueScore`）も同時に改善
 - 先読み側（§4-2）は「現在」に `stats.today.fatigueScore` を使い、`sessionsUntilThreshold` の k=0 判定（`estimateFatigueScore(stats)`）と一致する
 
 **★意図した副作用（既存の見える挙動変更）**: `updateWeeklyStats` は `recordSession` だけでなく **`viewStats`（`extension.ts:152`、保存あり）と `exportData`（`:169`）からも呼ばれ**、先頭で `rolloverDailyStats` を実行する。日付が変わった直後に統計画面を開くと、today は空データ（sessions 0）のまま `estimateFatigueScore(stats)` が走り、**週セッション数・連続日数・休憩スキップ率の加点だけが乗った値**（例: 週 ≥30 で +3、連続 5 日で +5、スキップ率で +5 → 13点）が `today.fatigueScore` に入って保存される。現状は最初のセッションまで 0 のままなので、次が変わる：
@@ -139,7 +144,7 @@ export function sessionsUntilThreshold(
 - `generateAdvices`（定義 `statsViewProvider.ts:377`）の `score >= 21` 分岐（`:385`）が 0 セットでも発火し得る（週 60 + 連続 7 日 = 25 なら「睡眠時間を30分延長」が出る）
 - CSV エクスポートの today 行の Fatigue Score
 
-**判断: この挙動を採用する。** モデル的には「疲労は前日から持ち越す」という意味で正しい方向であり、`week.fatigueScore` は**すでにこの値を持っていた**ので新しい計算ではない。代替（再計算を `recordSession` 側に置く）は `viewStats` 経路で不変条件が崩れるため採らない。CHANGELOG では **Fixed**（今日のスコアが週セッション数を含まず古かった）に加え **Changed**（0 セットの日でも週・連続日数由来のスコアが表示される）として明記する。§8 に rollover 直後のテストを置く。
+**判断: この挙動を採用する。** モデル的には「疲労は前日から持ち越す」という意味で正しい方向。従来の `week.fatigueScore` も週加点を含まない古い値だった（上記の潜在バグ）ため、これは `week.fatigueScore` の修正と同じ計算を today にも反映するだけである。代替（再計算を `recordSession` 側に置く）は `viewStats` 経路で不変条件が崩れるため採らない。CHANGELOG では **Fixed**（今日のスコアが週セッション数を含まず古かった）に加え **Changed**（0 セットの日でも週・連続日数由来のスコアが表示される）として明記する。§8 に rollover 直後のテストを置く。
 
 **`updateTodayStats` の `:210` は冗長になる**（直後の `updateWeeklyStats` が上書きするため）。削除せず残す場合は「`updateWeeklyStats` 側が正。ここは `recordSession` 以外から `updateTodayStats` 単独で呼ばれた場合の暫定値」とコメントを添える。本計画では**コメント追記に留め、削除はしない**（`updateTodayStats` 単体の既存テストへの影響を避ける）。
 

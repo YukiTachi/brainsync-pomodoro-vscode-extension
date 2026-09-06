@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
-import { Statistics } from '../config';
+import { Statistics, getFatigueAlertConfig, getFatigueForecastConfig } from '../config';
 import { formatMinutes, getFatigueLevel } from '../utils';
-import { getFatigueAlertConfig, getFatigueForecastConfig } from '../config';
 import { describeForecast } from '../statistics';
 
 /**

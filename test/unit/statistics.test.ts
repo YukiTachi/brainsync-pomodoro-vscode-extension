@@ -632,13 +632,9 @@ suite('脳疲労スコアの先読み', () => {
     });
 
     test('閾値 21 では levelLabel が「警戒」', () => {
-      // 今日 9(+5) + 中断 9/18=50%(+10) = 15、+1 で今日 10(+10)+ 10/19=52%(+10) = 20、+2 で 11(+10)+10/20=50%(+10)=20… 到達しない
-      // 到達させる例: 今日 11・中断 11 → 11/22=50%(+10)+今日11(+10) = 20、+1 で 12(+15)+11/23=47%(+5)=20 → 到達せず
-      // 単純に週の加点で跨ぐ例を使う
-      const stats = forecastStats(5, 0, 5);
-      stats.week.totalSessions = 59;                     // +1 で週60 → +15、今日6 → +3 = 18 … まだ
-      stats.today.sessions = 7;                          // 今日7(+3)+週59(+10) = 13、+1 で 8(+5)+60(+15) = 20 … まだ
-      stats.today.sessions = 9;                          // 今日9(+5)+週59(+10) = 15、+1 で 10(+10)+60(+15) = 25 ≥ 21
+      // 今日 9(+5) + 週 59(+10) = 現在 15、+1 で 今日 10(+10) + 週 60(+15) = 25 ≥ 21 → k=1
+      const stats = forecastStats(9, 0, 5);
+      stats.week.totalSessions = 59;
       const r = describeForecast(stats, 21, 2);
       assert.deepStrictEqual(r, { kind: 'reach', k: 1, threshold: 21, levelLabel: '警戒' });
     });
