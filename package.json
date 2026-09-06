@@ -2,7 +2,7 @@
   "name": "brainsync-focus-timer",
   "displayName": "BrainSync Focus Timer",
   "description": "%description%",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "publisher": "donut-service",
   "author": {
     "name": "Donut Service",

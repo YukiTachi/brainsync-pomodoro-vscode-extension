@@ -2,7 +2,7 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
-## [Unreleased]
+## [0.1.6] - 2026-09-06
 
 ### Added
 - マーケットプレースの多言語化（英語対応）: `package.nls.json`（英語・既定）と `package.nls.ja.json`（日本語）を導入し、VS Code Marketplace / Open VSX のページ・検索を英語化。README を英語版（`README.md`）と日本語版（`README.ja.md`）に分離
