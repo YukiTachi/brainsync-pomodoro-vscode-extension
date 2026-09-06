@@ -237,8 +237,10 @@ export function getFatigueAlertConfig() {
 export function getFatigueForecastConfig() {
   const config = vscode.workspace.getConfiguration('brainsync');
   const raw = config.get<number>('fatigueForecastLookahead', 2);
-  // settings.json 直書きは UI の min/max を通らないため、ここでクランプする
-  const lookahead = Math.max(1, Math.min(4, Math.round(raw)));
+  // settings.json 直書きは UI の min/max を通らないため、ここでクランプする。
+  // 非数値（NaN 等）が来た場合は既定値 2 にフォールバックしてから丸め・クランプする。
+  const num = Number.isFinite(raw) ? raw : 2;
+  const lookahead = Math.max(1, Math.min(4, Math.round(num)));
   return {
     enabled: config.get<boolean>('fatigueForecastEnabled', true),
     lookahead,

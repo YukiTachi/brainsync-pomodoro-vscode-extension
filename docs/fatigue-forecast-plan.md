@@ -17,7 +17,7 @@
 > ⚠️ このペースだと、あと **2 セット**で「警戒」（21点）に達します（現在 16点）
 
 - 通知は**セッション完了時**（次のセットを始めるか決める瞬間）に出す
-- 統計画面にも**トーストと同じ判定・同じ文言**で先読みを表示（設定に依存しない。通知なしでも見える。§4-1c / §4-4）
+- 統計画面にも**トーストと同じ判定・同じ文言**で先読みを表示（`fatigueForecastEnabled` が ON のとき。通知の有無には依存しない。§4-1c / §4-4）
 - **推測ではなく既存ルールの正確な先読み**。ユーザーに嘘をつかない
 
 ---
@@ -61,7 +61,7 @@
 |---|---|
 | **セッション完了時**（`handleWorkComplete`） | 完了後の stats（week 更新済み）で `describeForecast(stats, threshold, lookahead)` を評価（§4-1c）。結果が **`reach`**（現在 < 閾値 かつ lookahead 内に到達）のときだけ先読み通知。`projection` / `null` は通知しない |
 | 現在スコア ≥ 閾値 | 先読みは**出さない**（既存の `checkAndNotifyFatigueAlert` の領分。二重通知を避ける） |
-| 統計画面（`viewStats`） | **トーストと同じ判定**（§4-1c `describeForecast`）で 1 行表示。lookahead 内に到達するなら「あと k セットで「{levelLabel}」（{threshold}点）」、到達しないなら +1 予測（`projected > current` のときのみ）、それ以外は非表示。`fatigueForecastEnabled` OFF でも出す（§4-4） |
+| 統計画面（`viewStats`） | **トーストと同じ判定**（§4-1c `describeForecast`）で 1 行表示。lookahead 内に到達するなら「あと k セットで「{levelLabel}」（{threshold}点）」、到達しないなら +1 予測（`projected > current` のときのみ）、それ以外は非表示。**`fatigueForecastEnabled` が ON のときのみ**（§4-4） |
 
 ### 通知メッセージ（実行時文字列・当面は日本語）
 
@@ -243,7 +243,8 @@ export interface AlertState {
 | `null` | 行を出さない（閾値超過中は現在スコア表示で十分／上昇なしは出さない） |
 
 - **トーストと同じ判定・同じ文言**なので、「あと 2 セット」と警告された直後に統計画面を開いても同じ情報が見える（§6 確認①がそのまま成立）
-- **設定に依存せず表示**（`fatigueForecastEnabled` が OFF でも、**`fatigueAlertEnabled` が OFF でも**出す。閾値は値として存在し、これは情報提示であり割り込みではないため）。`lookahead` / `threshold` は設定値をそのまま使う（既定 2 / 21）
+- **`fatigueForecastEnabled` が ON のときのみ表示**（機能を OFF にしたら統計画面にも出さない＝ユーザーの明示的なオプトアウトを尊重）。ただし別機能の **`fatigueAlertEnabled` には依存させない**（閾値 `fatigueAlertThreshold` は値として共用するだけ）。`lookahead` / `threshold` は設定値をそのまま使う（既定 2 / 21）
+> レビュー反映（当初は「設定に依存せず常時表示」としていたが、コードレビューで『機能名の設定を OFF にしたのに表示が残るのは驚き』と指摘され、`fatigueForecastEnabled` を尊重する方針に変更）
 - HTML 生成は `describeForecast` の結果を文字列化するだけにし、**判定ロジックを WebView 側に持たない**（テストは純関数側で担保）
 
 ---

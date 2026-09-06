@@ -305,8 +305,9 @@ export function sessionsUntilThreshold(
   stats: Statistics,
   threshold: number,
   maxLookahead: number,
+  current: number = estimateFatigueScore(stats),
 ): number | null {
-  if (estimateFatigueScore(stats) >= threshold) {
+  if (current >= threshold) {
     return 0;
   }
   for (let k = 1; k <= maxLookahead; k++) {
@@ -341,7 +342,8 @@ export function describeForecast(
   if (current >= threshold) {
     return null;
   }
-  const k = sessionsUntilThreshold(stats, threshold, lookahead);
+  // current を渡して estimateFatigueScore の二重計算を避ける（describeForecast 側で計算済み）
+  const k = sessionsUntilThreshold(stats, threshold, lookahead, current);
   if (k !== null) {
     return { kind: 'reach', k, threshold, levelLabel: getFatigueLevel(threshold).label };
   }
