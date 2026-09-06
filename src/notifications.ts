@@ -2,8 +2,9 @@ import * as vscode from 'vscode';
 import { execFile, execFileSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { getNotificationConfig, getFatigueAlertConfig, getTimerConfig, AlertState, SessionRecord } from './config';
+import { getNotificationConfig, getFatigueAlertConfig, getFatigueForecastConfig, getTimerConfig, AlertState, SessionRecord, Statistics } from './config';
 import { getFatigueLevel, openDiagnosisPage, formatMinutes, getTodayDateStr } from './utils';
+import { describeForecast } from './statistics';
 import { Storage } from './storage';
 
 /**
@@ -124,8 +125,9 @@ export class NotificationManager {
       }
     }
 
-    // アラート状態を更新
+    // アラート状態を更新（先読み用フィールドを消さないようスプレッドで更新）
     const newAlertState: AlertState = {
+      ...alertState,
       lastAlertDate: today,
       lastAlertScore: fatigueScore,
     };
@@ -145,6 +147,51 @@ export class NotificationManager {
 
     if (selection === '詳しい診断を受ける') {
       openDiagnosisPage('fatigue_alert');
+    }
+  }
+
+  /**
+   * 脳疲労スコアの先読み警告（頻度制御付き）
+   * セッション完了時に、現在の作業ペースだと閾値へ到達する見込みを事前に知らせる。
+   * 現在すでに閾値以上のときは既存アラート（checkAndNotifyFatigueAlert）の領分なので出さない。
+   */
+  async checkAndNotifyFatigueForecast(stats: Statistics): Promise<void> {
+    const alertConfig = getFatigueAlertConfig();
+    const forecastConfig = getFatigueForecastConfig();
+    // サウンドは鳴らさないので、通知を出さない設定なら状態も更新せず早期 return
+    if (!alertConfig.enabled || !forecastConfig.enabled) {return;}
+    if (!getNotificationConfig().enabled) {return;}
+
+    const fc = describeForecast(stats, alertConfig.threshold, forecastConfig.lookahead);
+    if (!fc || fc.kind !== 'reach') {return;} // 到達しない / 既に超過 / 上昇のみ は出さない
+    const k = fc.k;
+
+    // 頻度制御: 同日・同じ残り数以上なら出さない（残りが減ったときだけ再通知）
+    const alertState = this.storage.getAlertState();
+    const today = getTodayDateStr();
+    if (
+      alertState.lastForecastDate === today &&
+      alertState.lastForecastRemaining !== null &&
+      k >= alertState.lastForecastRemaining
+    ) {
+      return;
+    }
+    await this.storage.saveAlertState({
+      ...alertState,
+      lastForecastDate: today,
+      lastForecastRemaining: k,
+    });
+
+    const score = stats.today.fatigueScore;
+    const when = k === 1 ? '次のセット' : `あと ${k} セット`;
+    const selection = await vscode.window.showWarningMessage(
+      `⚠️ このペースだと、${when}で「${fc.levelLabel}」（${fc.threshold}点）に達します（現在 ${score}点）`,
+      '詳しい診断を受ける',
+      '閉じる',
+    );
+
+    if (selection === '詳しい診断を受ける') {
+      openDiagnosisPage('fatigue_forecast');
     }
   }
 

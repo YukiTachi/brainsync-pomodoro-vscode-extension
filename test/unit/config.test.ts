@@ -11,6 +11,7 @@ import {
   getTimerConfig,
   getNotificationConfig,
   getFatigueAlertConfig,
+  getFatigueForecastConfig,
 } from '../../src/config';
 
 // ============================================================
@@ -154,6 +155,26 @@ suite('config Unit Tests', () => {
       const config = getFatigueAlertConfig();
       assert.strictEqual(config.enabled, false);
       assert.strictEqual(config.threshold, 28);
+    });
+  });
+
+  // ----------------------------------------------------------
+  // getFatigueForecastConfig
+  // ----------------------------------------------------------
+  suite('getFatigueForecastConfig', () => {
+    test('デフォルト値（enabled=true, lookahead=2）', () => {
+      const c = getFatigueForecastConfig();
+      assert.strictEqual(c.enabled, true);
+      assert.strictEqual(c.lookahead, 2);
+    });
+
+    test('lookahead は 1〜4 にクランプされる', () => {
+      _setConfig({ fatigueForecastLookahead: 0 });
+      assert.strictEqual(getFatigueForecastConfig().lookahead, 1);
+      _setConfig({ fatigueForecastLookahead: 9 });
+      assert.strictEqual(getFatigueForecastConfig().lookahead, 4);
+      _setConfig({ fatigueForecastLookahead: 3 });
+      assert.strictEqual(getFatigueForecastConfig().lookahead, 3);
     });
   });
 });

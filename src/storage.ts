@@ -77,7 +77,8 @@ export class Storage {
     try {
       const data = this.context.globalState.get<AlertState>(STORAGE_KEYS.alertState);
       if (data) {
-        return data;
+        // 後方互換: 旧バージョンの保存データには先読み用フィールドが無いため既定値とマージ
+        return { ...createDefaultAlertState(), ...data };
       }
     } catch (error) {
       this.logError('Failed to read alert state', error);

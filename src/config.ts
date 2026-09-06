@@ -86,8 +86,10 @@ export interface Statistics {
 // アラート状態
 // ============================================================
 export interface AlertState {
-  lastAlertDate: string | null;  // YYYY-MM-DD
-  lastAlertScore: number;
+  lastAlertDate: string | null;         // YYYY-MM-DD（既存アラート）
+  lastAlertScore: number;               // 既存アラート
+  lastForecastDate: string | null;      // YYYY-MM-DD（先読み警告を最後に出した日）
+  lastForecastRemaining: number | null; // そのときの残りセット数 k
 }
 
 // ============================================================
@@ -194,6 +196,8 @@ export function createDefaultAlertState(): AlertState {
   return {
     lastAlertDate: null,
     lastAlertScore: 0,
+    lastForecastDate: null,
+    lastForecastRemaining: null,
   };
 }
 
@@ -227,5 +231,16 @@ export function getFatigueAlertConfig() {
   return {
     enabled: config.get<boolean>('fatigueAlertEnabled', true),
     threshold: config.get<number>('fatigueAlertThreshold', 21),
+  };
+}
+
+export function getFatigueForecastConfig() {
+  const config = vscode.workspace.getConfiguration('brainsync');
+  const raw = config.get<number>('fatigueForecastLookahead', 2);
+  // settings.json 直書きは UI の min/max を通らないため、ここでクランプする
+  const lookahead = Math.max(1, Math.min(4, Math.round(raw)));
+  return {
+    enabled: config.get<boolean>('fatigueForecastEnabled', true),
+    lookahead,
   };
 }

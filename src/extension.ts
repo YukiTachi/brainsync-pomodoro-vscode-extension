@@ -384,8 +384,11 @@ async function handleWorkComplete(session: SessionRecord): Promise<void> {
     stats.today.fatigueScore,
   );
 
-  // 脳疲労アラートチェック
+  // 脳疲労アラートチェック（到達）
   notificationManager.checkAndNotifyFatigueAlert(stats.today.fatigueScore);
+
+  // 脳疲労スコアの先読み警告（到達前）。stats は recordSession 後（week 更新済み）
+  notificationManager.checkAndNotifyFatigueForecast(stats);
 
   // 自動休憩開始
   if (config.autoStartBreak) {

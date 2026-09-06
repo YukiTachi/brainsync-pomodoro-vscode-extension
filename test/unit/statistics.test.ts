@@ -11,6 +11,9 @@ import {
   updateWeeklyStats,
   exportToCSV,
   createMockStats,
+  projectFatigueScore,
+  sessionsUntilThreshold,
+  describeForecast,
 } from '../../src/statistics';
 import {
   createDefaultStatistics,
@@ -493,6 +496,166 @@ suite('statistics Unit Tests', () => {
       const stats: Statistics = createMockStats();
       assert.strictEqual(stats.today.sessions, 0);
       assert.strictEqual(stats.history.length, 0);
+    });
+  });
+});
+
+// ============================================================
+// 脳疲労スコアの先読み（docs/fatigue-forecast-plan.md §8）
+// ============================================================
+
+/**
+ * 今日 sessions 完了・interrupted 中断、履歴に completed の work/break を積んだ stats。
+ * breaks を work と同数にすると休憩スキップ率が 0 になる（スキップ加点なし）。
+ */
+function forecastStats(sessions: number, interrupted: number, breaks: number): Statistics {
+  const stats = createDefaultStatistics();
+  stats.today.sessions = sessions;
+  stats.today.interruptedSessions = interrupted;
+  const now = new Date().toISOString();
+  for (let i = 0; i < sessions; i++) {
+    stats.history.push(makeSession({ id: `w${i}`, type: 'work', completed: true, startTime: now, endTime: now }));
+  }
+  for (let i = 0; i < breaks; i++) {
+    stats.history.push(makeSession({ id: `b${i}`, type: 'break', completed: true, startTime: now, endTime: now }));
+  }
+  return stats;
+}
+
+suite('脳疲労スコアの先読み', () => {
+
+  suite('updateWeeklyStats の不変条件（§4-1a）', () => {
+    test('updateWeeklyStats 後は today.fatigueScore === estimateFatigueScore(stats) === week.fatigueScore', () => {
+      const stats = createDefaultStatistics();
+      stats.today.sessions = 4;
+      const updated = updateWeeklyStats(stats);
+      assert.strictEqual(updated.today.fatigueScore, estimateFatigueScore(updated));
+      assert.strictEqual(updated.today.fatigueScore, updated.week.fatigueScore);
+    });
+
+    test('週の段階を跨ぐセッションで today が週込みの値に更新される（既存バグ修正）', () => {
+      // updateTodayStats 時点では week.totalSessions が 0 のため週の加点が乗らない
+      const stats = createDefaultStatistics();
+      stats.today.sessions = 29;
+      updateTodayStats(stats, makeSession({ type: 'work', completed: true }));
+      const before = stats.today.fatigueScore;     // 今日30(+15) + スキップ率(+5) = 20、週の加点なし
+      const updated = updateWeeklyStats(stats);   // 週30 → +3 が乗る
+      assert.ok(updated.today.fatigueScore > before, '週の加点が today に反映されるべき');
+      assert.strictEqual(updated.today.fatigueScore, estimateFatigueScore(updated));
+    });
+
+    test('week.dailyStats 内の today 行も同じ fatigueScore になる', () => {
+      const stats = createDefaultStatistics();
+      stats.today.sessions = 6;
+      const updated = updateWeeklyStats(stats);
+      const todayRow = updated.week.dailyStats.find((d) => d.date === updated.today.date);
+      assert.ok(todayRow, 'today 行が week.dailyStats に存在する');
+      assert.strictEqual(todayRow!.fatigueScore, updated.today.fatigueScore);
+    });
+
+    test('rollover 直後（sessions 0）でも履歴由来の加点が today.fatigueScore に乗る（§4-1a 副作用）', () => {
+      const stats = createDefaultStatistics();
+      stats.today.date = '2026-02-28';
+      stats.today.sessions = 1;
+      // 直近7日の completed work が 1 件・break 0 件 → 休憩スキップ率 1.0 → +5
+      const now = new Date().toISOString();
+      stats.history.push(makeSession({ type: 'work', completed: true, startTime: now, endTime: now }));
+      const updated = updateWeeklyStats(stats);
+      assert.strictEqual(updated.today.sessions, 0, 'rollover で今日は 0 セット');
+      assert.strictEqual(updated.today.fatigueScore, 5, '週・履歴由来の加点（スキップ率 +5）が乗る');
+    });
+  });
+
+  suite('projectFatigueScore', () => {
+    test('extra=0 は estimateFatigueScore と一致', () => {
+      const stats = forecastStats(6, 8, 6);
+      assert.strictEqual(projectFatigueScore(stats, 0), estimateFatigueScore(stats));
+    });
+
+    test('元の stats を変更しない（deep copy）', () => {
+      const stats = forecastStats(5, 0, 5);
+      const before = JSON.stringify(stats);
+      projectFatigueScore(stats, 2);
+      assert.strictEqual(JSON.stringify(stats), before);
+    });
+
+    test('今日と週の段階を同時に跨ぐ（今日 5→6 で +3、週 29→30 で +3）', () => {
+      const stats = forecastStats(5, 0, 5);
+      stats.week.totalSessions = 29;
+      const current = estimateFatigueScore(stats);      // 今日5(0) + 週29(0) = 0
+      const projected = projectFatigueScore(stats, 1);  // 今日6(+3) + 週30(+3) = 6
+      assert.strictEqual(current, 0);
+      assert.strictEqual(projected, 6);
+    });
+
+    test('今日 0 セットから +1 で連続日数に今日が加わる', () => {
+      // 昨日まで 4 日連続 → 今日を足すと 5 日連続で +5
+      const stats = createMockStats({ consecutiveDays: 5 });
+      stats.today.sessions = 0;                          // 今日はまだ 0 セット
+      const current = estimateFatigueScore(stats);      // 連続は昨日から4日 → 0
+      const projected = projectFatigueScore(stats, 1);  // 今日が加わり5日 → +5
+      assert.strictEqual(current, 0);
+      assert.strictEqual(projected, 5);
+    });
+
+    test('非単調: 中断率の希釈で予測が現在より下がる', () => {
+      const stats = forecastStats(1, 1, 1);             // 1/2 = 50% → +10
+      const current = estimateFatigueScore(stats);
+      const projected = projectFatigueScore(stats, 1);  // 1/3 = 33% → +5
+      assert.strictEqual(current, 10);
+      assert.strictEqual(projected, 5);
+    });
+  });
+
+  suite('sessionsUntilThreshold', () => {
+    test('既に閾値以上なら 0', () => {
+      assert.strictEqual(sessionsUntilThreshold(forecastStats(8, 8, 8), 15, 2), 0);
+    });
+    test('lookahead 内で到達するなら最小の k', () => {
+      assert.strictEqual(sessionsUntilThreshold(forecastStats(6, 8, 6), 15, 2), 2);
+      assert.strictEqual(sessionsUntilThreshold(forecastStats(7, 8, 7), 15, 2), 1);
+    });
+    test('lookahead 内に到達しなければ null', () => {
+      assert.strictEqual(sessionsUntilThreshold(forecastStats(6, 8, 6), 15, 1), null);
+      assert.strictEqual(sessionsUntilThreshold(forecastStats(0, 0, 0), 15, 4), null);
+    });
+  });
+
+  suite('describeForecast（§4-1c）', () => {
+    test('§6 の経路: 完了 6/7/8（中断 8）で reach{2} → reach{1} → null と推移する', () => {
+      const r6 = describeForecast(forecastStats(6, 8, 6), 15, 2);
+      const r7 = describeForecast(forecastStats(7, 8, 7), 15, 2);
+      const r8 = describeForecast(forecastStats(8, 8, 8), 15, 2);
+      assert.deepStrictEqual(r6, { kind: 'reach', k: 2, threshold: 15, levelLabel: 'やや注意' });
+      assert.deepStrictEqual(r7, { kind: 'reach', k: 1, threshold: 15, levelLabel: 'やや注意' });
+      assert.strictEqual(r8, null, '閾値以上は既存アラートの領分');
+    });
+
+    test('閾値 21 では levelLabel が「警戒」', () => {
+      // 今日 9(+5) + 中断 9/18=50%(+10) = 15、+1 で今日 10(+10)+ 10/19=52%(+10) = 20、+2 で 11(+10)+10/20=50%(+10)=20… 到達しない
+      // 到達させる例: 今日 11・中断 11 → 11/22=50%(+10)+今日11(+10) = 20、+1 で 12(+15)+11/23=47%(+5)=20 → 到達せず
+      // 単純に週の加点で跨ぐ例を使う
+      const stats = forecastStats(5, 0, 5);
+      stats.week.totalSessions = 59;                     // +1 で週60 → +15、今日6 → +3 = 18 … まだ
+      stats.today.sessions = 7;                          // 今日7(+3)+週59(+10) = 13、+1 で 8(+5)+60(+15) = 20 … まだ
+      stats.today.sessions = 9;                          // 今日9(+5)+週59(+10) = 15、+1 で 10(+10)+60(+15) = 25 ≥ 21
+      const r = describeForecast(stats, 21, 2);
+      assert.deepStrictEqual(r, { kind: 'reach', k: 1, threshold: 21, levelLabel: '警戒' });
+    });
+
+    test('到達しないが +1 で上昇する場合は projection', () => {
+      const stats = forecastStats(5, 0, 5);              // 現在 0、+1 で今日6 → +3
+      assert.deepStrictEqual(describeForecast(stats, 30, 1), { kind: 'projection', score: 3 });
+    });
+
+    test('到達せず +1 でも上昇しない場合は null', () => {
+      const stats = forecastStats(1, 0, 1);              // 現在 0、+1 で今日2 → 0
+      assert.strictEqual(describeForecast(stats, 30, 1), null);
+    });
+
+    test('到達せず +1 で下がる場合も null（非単調）', () => {
+      const stats = forecastStats(1, 1, 1);              // 現在 10、+1 で 5
+      assert.strictEqual(describeForecast(stats, 30, 1), null);
     });
   });
 });

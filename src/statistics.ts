@@ -7,7 +7,7 @@ import {
   createDefaultDailyStats,
   createDefaultStatistics,
 } from './config';
-import { getTodayDateStr, getWeekStart, getWeekEnd } from './utils';
+import { getTodayDateStr, getWeekStart, getWeekEnd, getFatigueLevel } from './utils';
 
 // ============================================================
 // 脳疲労スコア推定
@@ -207,6 +207,9 @@ export function updateTodayStats(stats: Statistics, newSession: SessionRecord): 
   }
 
   // 脳疲労スコアを再計算
+  // NOTE: この時点では stats.week が更新前のため、週セッション数を含まない暫定値になる。
+  //       正となる値は直後の updateWeeklyStats が week 更新後に再計算して上書きする。
+  //       ここは updateTodayStats が単独で呼ばれた場合の暫定値として残している。
   stats.today.fatigueScore = estimateFatigueScore(stats);
 
   return stats;
@@ -252,11 +255,98 @@ export function updateWeeklyStats(stats: Statistics): Statistics {
     totalSessions,
     totalFocusTime,
     dailyAverage: Math.round((totalSessions / 7) * 10) / 10,
-    fatigueScore: estimateFatigueScore(stats),
+    fatigueScore: 0, // プレースホルダ。stats.week 代入後に再計算する（下記）
     dailyStats,
   };
 
+  // ★スコアは stats.week を代入した「後」に計算する。
+  //   従来は object literal 内で estimateFatigueScore(stats) を呼んでいたため、
+  //   代入前の古い stats.week（totalSessions が更新前）を読み、
+  //   「今週のセッション数」による加点が week.fatigueScore に反映されない潜在バグがあった。
+  //   代入後に計算し、week と today の両方へ同じ値を入れることで
+  //   today.fatigueScore === estimateFatigueScore(stats) === week.fatigueScore が不変条件になる。
+  //   （dailyStats 内の today 行は stats.today と同一オブジェクトなので同時に反映される）
+  const currentScore = estimateFatigueScore(stats);
+  stats.week.fatigueScore = currentScore;
+  stats.today.fatigueScore = currentScore;
+
   return stats;
+}
+
+// ============================================================
+// 脳疲労スコアの先読み（既存ルールの正確なシミュレーション）
+// ============================================================
+
+/**
+ * 今日のセッションを extraSessions 回追加した場合の推定脳疲労スコア。
+ * 新しい推定モデルではなく、既存の estimateFatigueScore をそのまま先読みする。
+ * 元の stats は変更しない。
+ *
+ * 前提: 引数の stats は updateWeeklyStats 適用後（week が最新）であること。
+ */
+export function projectFatigueScore(stats: Statistics, extraSessions: number): number {
+  if (extraSessions <= 0) {
+    return estimateFatigueScore(stats);
+  }
+  const projected: Statistics = {
+    ...stats,
+    today: { ...stats.today, sessions: stats.today.sessions + extraSessions },
+    week: { ...stats.week, totalSessions: stats.week.totalSessions + extraSessions },
+  };
+  return estimateFatigueScore(projected);
+}
+
+/**
+ * 閾値に到達するまでのセット数。
+ * 現在すでに閾値以上なら 0、1..maxLookahead の範囲で到達するなら最小の k、到達しないなら null。
+ * スコアは非単調（中断率の希釈で下がることがある）だが、最小 k の線形探索は影響を受けない。
+ */
+export function sessionsUntilThreshold(
+  stats: Statistics,
+  threshold: number,
+  maxLookahead: number,
+): number | null {
+  if (estimateFatigueScore(stats) >= threshold) {
+    return 0;
+  }
+  for (let k = 1; k <= maxLookahead; k++) {
+    if (projectFatigueScore(stats, k) >= threshold) {
+      return k;
+    }
+  }
+  return null;
+}
+
+/**
+ * 先読みとして「何を伝えるか」の判定。トースト（notifications）と統計画面（webview）が
+ * 同じ判定・同じ文言を使うための単一の情報源。
+ *  - reach:      lookahead 内に閾値へ到達する（k セット後）
+ *  - projection: 到達はしないが、次のセットでスコアが上がる
+ *  - null:       表示なし（既に閾値以上 = 既存アラートの領分 / 上昇しない）
+ */
+export type ForecastSummary =
+  | { kind: 'reach'; k: number; threshold: number; levelLabel: string }
+  | { kind: 'projection'; score: number }
+  | null;
+
+export function describeForecast(
+  stats: Statistics,
+  threshold: number,
+  lookahead: number,
+): ForecastSummary {
+  // 「現在」は関数内で 1 回だけ計算し、到達判定と上昇判定の両方でこれを使う。
+  // updateWeeklyStats 後は today.fatigueScore と同値だが、純関数として
+  // 任意の stats を渡されても判定が食い違わないようにする。
+  const current = estimateFatigueScore(stats);
+  if (current >= threshold) {
+    return null;
+  }
+  const k = sessionsUntilThreshold(stats, threshold, lookahead);
+  if (k !== null) {
+    return { kind: 'reach', k, threshold, levelLabel: getFatigueLevel(threshold).label };
+  }
+  const projected = projectFatigueScore(stats, 1);
+  return projected > current ? { kind: 'projection', score: projected } : null;
 }
 
 // ============================================================

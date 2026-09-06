@@ -28,5 +28,7 @@
   "config.slackIntegration": "Put Slack into focus mode (snooze notifications) during work sessions. Turned off automatically on break or finish. Set your token first with \"BrainSync: Connect Slack\".",
   "config.slackSetStatus": "When Slack integration is enabled, also set your Slack status automatically during work sessions.",
   "config.slackStatusText": "Slack status text to set during work sessions (Slack shows the end time automatically).",
-  "config.slackStatusEmoji": "Slack status emoji code to set during work sessions (e.g. :tomato:)."
+  "config.slackStatusEmoji": "Slack status emoji code to set during work sessions (e.g. :tomato:).",
+  "config.fatigueForecastEnabled": "Show a brain fatigue forecast (warn before you reach the alert threshold)",
+  "config.fatigueForecastLookahead": "How many sessions ahead to look when warning (1-4)"
 }

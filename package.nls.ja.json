@@ -28,5 +28,7 @@
   "config.slackIntegration": "作業中はSlackを集中モードにする（通知を一時停止）。休憩・終了時に自動解除されます。事前に「BrainSync: Slack連携を設定」でトークンの設定が必要です。",
   "config.slackSetStatus": "Slack連携が有効なとき、作業中はSlackのステータスも自動設定する。",
   "config.slackStatusText": "作業中に設定するSlackステータスの文言（終了時刻はSlackが自動表示します）。",
-  "config.slackStatusEmoji": "作業中に設定するSlackステータスの絵文字コード（例: :tomato:）。"
+  "config.slackStatusEmoji": "作業中に設定するSlackステータスの絵文字コード（例: :tomato:）。",
+  "config.fatigueForecastEnabled": "脳疲労の先読み警告を表示する（アラート閾値に達する前に予告する）",
+  "config.fatigueForecastLookahead": "何セット先まで見て警告するか（1〜4）"
 }
