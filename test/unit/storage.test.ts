@@ -143,10 +143,26 @@ suite('storage Unit Tests', () => {
 
     test('保存したアラート状態を取得できる', async () => {
       const { storage } = createStorage();
-      await storage.saveAlertState({ lastAlertDate: '2024-06-06', lastAlertScore: 25 });
+      await storage.saveAlertState({
+        lastAlertDate: '2024-06-06',
+        lastAlertScore: 25,
+        lastForecastDate: null,
+        lastForecastRemaining: null,
+      });
       const alert = storage.getAlertState();
       assert.strictEqual(alert.lastAlertDate, '2024-06-06');
       assert.strictEqual(alert.lastAlertScore, 25);
+    });
+
+    test('旧バージョンの保存データ（先読みフィールド欠損）は既定値でマージされる', async () => {
+      const { storage, store } = createStorage();
+      // 旧データを直接 globalState に入れる（AlertState の新フィールドが無い状態）
+      store.set('brainsync.alertState', { lastAlertDate: '2024-06-06', lastAlertScore: 25 });
+      const alert = storage.getAlertState();
+      assert.strictEqual(alert.lastAlertDate, '2024-06-06');
+      assert.strictEqual(alert.lastAlertScore, 25);
+      assert.strictEqual(alert.lastForecastDate, null, '欠損フィールドは既定値 null で補完される');
+      assert.strictEqual(alert.lastForecastRemaining, null);
     });
   });
 

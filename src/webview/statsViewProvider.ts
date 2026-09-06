@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
-import { Statistics } from '../config';
+import { Statistics, getFatigueAlertConfig, getFatigueForecastConfig } from '../config';
 import { formatMinutes, getFatigueLevel } from '../utils';
+import { describeForecast } from '../statistics';
 
 /**
  * 統計画面Webviewの管理
@@ -74,6 +75,23 @@ export class StatsViewProvider {
   private getHtml(webview: vscode.Webview, stats: Statistics): string {
     const fatigueLevel = getFatigueLevel(stats.today.fatigueScore);
     const weekFatigueLevel = getFatigueLevel(stats.week.fatigueScore);
+
+    // 先読み（トーストと同じ describeForecast を参照）。
+    // ユーザーが機能を OFF にしたら統計画面にも出さない（fatigueForecastEnabled を尊重。
+    // 閾値は fatigueAlertThreshold を共用するが、fatigueAlertEnabled には依存させない）。
+    const alertCfg = getFatigueAlertConfig();
+    const forecastCfg = getFatigueForecastConfig();
+    let forecastHtml = '';
+    if (forecastCfg.enabled) {
+      const forecast = describeForecast(stats, alertCfg.threshold, forecastCfg.lookahead);
+      if (forecast && forecast.kind === 'reach') {
+        const when = forecast.k === 1 ? '次のセット' : `あと ${forecast.k} セット`;
+        forecastHtml = `<div class="fatigue-forecast">⚠️ ${when}で「${forecast.levelLabel}」（${forecast.threshold}点）に達します</div>`;
+      } else if (forecast && forecast.kind === 'projection') {
+        const lvl = getFatigueLevel(forecast.score);
+        forecastHtml = `<div class="fatigue-forecast" style="color: ${this.getFatigueColor(forecast.score)}">次のセット後の予測: ${forecast.score}点 ${lvl.emoji} ${lvl.label}</div>`;
+      }
+    }
 
     // 週間トレンドのバーチャート
     const maxSessions = Math.max(...stats.week.dailyStats.map((d) => d.sessions), 1);
@@ -186,6 +204,16 @@ export class StatsViewProvider {
       text-align: center;
       color: var(--text-secondary);
       margin-bottom: 0.5rem;
+    }
+
+    .fatigue-forecast {
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.35rem 0.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+      background: var(--vscode-editorWidget-background, rgba(127, 127, 127, 0.1));
     }
 
     .advice-list {
@@ -327,6 +355,7 @@ export class StatsViewProvider {
       ${fatigueLevel.emoji} ${stats.today.fatigueScore}点
     </div>
     <div class="fatigue-label">${fatigueLevel.label}</div>
+    ${forecastHtml}
 
     <div class="diagnosis-note">
       💡 この推定は作業時間から算出した簡易的なものです。より詳しい診断で正確な状態を把握しましょう。

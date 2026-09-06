@@ -2,6 +2,17 @@
 
 All notable changes to the "BrainSync Focus Timer" extension will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- 脳疲労スコアの先読み警告: 現在の作業ペースだと「あと N セットで警戒域に入る」ことを、閾値に達する**前**にセッション完了時へ通知。統計画面にも同じ先読みを表示。設定 `brainsync.fatigueForecastEnabled`（既定 ON）/ `brainsync.fatigueForecastLookahead`（1〜4、既定 2）を追加。閾値は既存の `fatigueAlertThreshold` を共用
+
+### Fixed
+- 週次統計の脳疲労スコア（`week.fatigueScore`）と当日スコア（`today.fatigueScore`）に「今週のセッション数」による加点が反映されていなかった問題を修正（スコア計算が週データの更新前に行われていた）。これにより週の段階（30/40/50/60 セット）を跨いだ直後にアラートが正しく反応するようになった
+
+### Changed
+- 日付が変わった直後（当日 0 セット）でも、前日までの週セッション数・連続作業日数・休憩スキップ率による脳疲労スコアが統計画面・CSV に表示されるようになった（疲労の持ち越しを反映。上記 Fixed に伴う挙動変更）
+
 ## [0.1.6] - 2026-09-06
 
 ### Added

@@ -4,7 +4,7 @@ import * as assert from 'assert';
 import { _setConfig, _resetConfig, Uri } from './mocks/vscode';
 import { NotificationManager, NotificationCallbacks } from '../../src/notifications';
 import { Storage } from '../../src/storage';
-import { createDefaultAlertState } from '../../src/config';
+import { createDefaultAlertState, createDefaultStatistics, Statistics, AlertState, SessionRecord } from '../../src/config';
 
 // ============================================================
 // テストヘルパー
@@ -266,5 +266,106 @@ suite('NotificationManager Unit Tests', () => {
       manager.dispose();
       assert.ok(true, 'dispose completed without error');
     });
+  });
+});
+
+
+// ============================================================
+// 脳疲労スコアの先読み警告（docs/fatigue-forecast-plan.md §8）
+// ============================================================
+
+/** saveAlertState を記録する状態保持型ストレージ */
+function statefulStorage(initial?: Partial<AlertState>) {
+  let state: AlertState = { ...createDefaultAlertState(), ...initial };
+  const saves: AlertState[] = [];
+  const storage = {
+    getAlertState: () => state,
+    saveAlertState: async (s: AlertState) => { state = s; saves.push(s); },
+  } as any;
+  return { storage, saves, get: () => state };
+}
+
+function managerWith(storage: any, cfg?: Record<string, any>): NotificationManager {
+  _resetConfig();
+  _setConfig({
+    notificationEnabled: true, soundEnabled: false, soundVolume: 50, soundFile: 'silent',
+    fatigueAlertEnabled: true, fatigueAlertThreshold: 15,
+    fatigueForecastEnabled: true, fatigueForecastLookahead: 2,
+    ...cfg,
+  });
+  return new NotificationManager(storage, createMockCallbacks(), Uri.file('/mock') as any);
+}
+
+/** 今日 sessions 完了・interrupted 中断、履歴に completed work/break を積んだ stats */
+function fcStats(sessions: number, interrupted: number, breaks: number): Statistics {
+  const stats = createDefaultStatistics();
+  stats.today.sessions = sessions;
+  stats.today.interruptedSessions = interrupted;
+  const now = new Date().toISOString();
+  const rec = (id: string, type: 'work' | 'break'): SessionRecord =>
+    ({ id, type, completed: true, duration: 1, startTime: now, endTime: now });
+  for (let i = 0; i < sessions; i++) { stats.history.push(rec(`w${i}`, 'work')); }
+  for (let i = 0; i < breaks; i++) { stats.history.push(rec(`b${i}`, 'break')); }
+  return stats;
+}
+
+suite('NotificationManager 先読み警告', () => {
+  teardown(() => { _resetConfig(); });
+
+  test('fatigueForecastEnabled=false では通知せず状態も保存しない', async () => {
+    const { storage, saves } = statefulStorage();
+    await managerWith(storage, { fatigueForecastEnabled: false }).checkAndNotifyFatigueForecast(fcStats(6, 8, 6));
+    assert.strictEqual(saves.length, 0);
+  });
+
+  test('fatigueAlertEnabled=false では出さない', async () => {
+    const { storage, saves } = statefulStorage();
+    await managerWith(storage, { fatigueAlertEnabled: false }).checkAndNotifyFatigueForecast(fcStats(6, 8, 6));
+    assert.strictEqual(saves.length, 0);
+  });
+
+  test('notificationEnabled=false では出さない', async () => {
+    const { storage, saves } = statefulStorage();
+    await managerWith(storage, { notificationEnabled: false }).checkAndNotifyFatigueForecast(fcStats(6, 8, 6));
+    assert.strictEqual(saves.length, 0);
+  });
+
+  test('reach(k=2) で通知し、残りセット数 2 を保存する', async () => {
+    const { storage, saves } = statefulStorage();
+    await managerWith(storage).checkAndNotifyFatigueForecast(fcStats(6, 8, 6));
+    assert.strictEqual(saves.length, 1);
+    assert.strictEqual(saves[0].lastForecastRemaining, 2);
+  });
+
+  test('同日・同じ k(=2) では2回目を出さない', async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { storage, saves } = statefulStorage({ lastForecastDate: today, lastForecastRemaining: 2 });
+    await managerWith(storage).checkAndNotifyFatigueForecast(fcStats(6, 8, 6)); // k=2
+    assert.strictEqual(saves.length, 0);
+  });
+
+  test('同日でも k が減れば（2→1）再通知する', async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { storage, saves } = statefulStorage({ lastForecastDate: today, lastForecastRemaining: 2 });
+    await managerWith(storage).checkAndNotifyFatigueForecast(fcStats(7, 8, 7)); // k=1
+    assert.strictEqual(saves.length, 1);
+    assert.strictEqual(saves[0].lastForecastRemaining, 1);
+  });
+
+  test('既に閾値以上（reach しない）では出さない', async () => {
+    const { storage, saves } = statefulStorage();
+    await managerWith(storage).checkAndNotifyFatigueForecast(fcStats(8, 8, 8)); // 15点 = 閾値
+    assert.strictEqual(saves.length, 0);
+  });
+
+  test('既存アラートは先読みの状態フィールドを消さない（スプレッド更新）', async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const { storage, get } = statefulStorage({ lastForecastDate: today, lastForecastRemaining: 1 });
+    // 閾値以上のスコアで既存アラートを発火させる
+    await managerWith(storage, { fatigueAlertThreshold: 10 }).checkAndNotifyFatigueAlert(25);
+    const st = get();
+    assert.strictEqual(st.lastAlertScore, 25, '既存アラートは更新される');
+    assert.strictEqual(st.lastForecastDate, today, '先読みの状態は保持される');
+    assert.strictEqual(st.lastForecastRemaining, 1);
   });
 });

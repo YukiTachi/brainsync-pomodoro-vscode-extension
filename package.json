@@ -205,6 +205,18 @@
           "type": "string",
           "default": ":tomato:",
           "description": "%config.slackStatusEmoji%"
+        },
+        "brainsync.fatigueForecastEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "%config.fatigueForecastEnabled%"
+        },
+        "brainsync.fatigueForecastLookahead": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 4,
+          "description": "%config.fatigueForecastLookahead%"
         }
       }
     }
