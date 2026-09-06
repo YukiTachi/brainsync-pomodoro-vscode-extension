@@ -1,69 +1,71 @@
 # BrainSync Focus Timer
 
-エンジニアの脳疲労を科学するポモドーロタイマー
+**English** | [日本語](README.ja.md)
+
+A Pomodoro timer for engineers that estimates brain fatigue
 
 [![Open VSX Version](https://img.shields.io/open-vsx/v/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
 [![Open VSX Downloads](https://img.shields.io/open-vsx/dt/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
 [![Open VSX Rating](https://img.shields.io/open-vsx/rating/donut-service/brainsync-focus-timer)](https://open-vsx.org/extension/donut-service/brainsync-focus-timer)
 
-## 対応エディタ
+## Supported Editors
 
-✅ **Visual Studio Code** (1.80.0以降)
-✅ **Cursor** (VS Codeベース)
+✅ **Visual Studio Code** (1.80.0 or later)
+✅ **Cursor** (VS Code based)
 
-BrainSync Focus Timerは、VS Code互換のすべてのエディタで動作します。
+BrainSync Focus Timer works in any VS Code compatible editor.
 
-## 特徴
+## Features
 
-- 🧠 **30分集中 + 5分休憩**（カスタマイズ可能：15-60分）
-- 📊 **脳疲労スコアの自動推定**（作業量から算出）
-- 📈 **詳細な統計とレポート**（日次・週次）
-- 🔗 **BrainSync脳疲労診断との連携**
-- ⚡ **軽量・高速**（バックグラウンド動作）
+- 🧠 **30-minute focus + 5-minute break** (customizable: 15–60 minutes)
+- 📊 **Automatic brain fatigue score estimation** (calculated from your workload)
+- 📈 **Detailed statistics and reports** (daily and weekly)
+- 🔗 **Integration with the BrainSync brain fatigue assessment**
+- ⚡ **Lightweight and fast** (runs in the background)
 
-<!-- スクリーンショット: 拡張機能の全体像がわかる画像を配置してください -->
-<!-- ![BrainSync Focus Timer の概要](images/screenshots/overview.png) -->
+<!-- Screenshot: place an image that gives an overview of the extension -->
+<!-- ![BrainSync Focus Timer overview](images/screenshots/overview.png) -->
 
-## 使い方
+## Usage
 
-### 基本操作
+### Basic Operation
 
-1. **タイマー開始**: ステータスバーの 🧠 アイコンをクリックしてメニューを開き、タイマーを開始
-2. **集中作業**: 30分間作業に集中
-3. **休憩**: 通知が来たら5分休憩
-4. **統計確認**: コマンドパレット > 「BrainSync: 統計を表示」
+1. **Start the timer**: click the 🧠 icon in the status bar to open the menu and start the timer
+2. **Focus**: work with full concentration for 30 minutes
+3. **Take a break**: when the notification arrives, rest for 5 minutes
+4. **Check your statistics**: Command Palette > "BrainSync: Show Statistics"
 
-<!-- スクリーンショット: ステータスバーのタイマー表示 -->
-<!-- ![ステータスバー](images/screenshots/statusbar.png) -->
+<!-- Screenshot: timer display in the status bar -->
+<!-- ![Status bar](images/screenshots/statusbar.png) -->
 
-### タイマーサイクル
+### Timer Cycle
 
 ```
-🧠 作業 (30分) → ☕ 短い休憩 (5分) → 🧠 作業 → ☕ 休憩 → 🧠 作業 → ☕ 休憩 → 🧠 作業 → 🌿 長い休憩 (15分)
+🧠 Work (30 min) → ☕ Short break (5 min) → 🧠 Work → ☕ Break → 🧠 Work → ☕ Break → 🧠 Work → 🌿 Long break (15 min)
 ```
 
-4セッション完了ごとに長い休憩が入ります。
+A long break is inserted after every 4 completed sessions.
 
-### コマンド一覧
+### Commands
 
-| コマンド | 説明 |
-|---------|------|
-| `BrainSync: タイマー開始` | タイマーを開始 |
-| `BrainSync: タイマー一時停止/再開` | 一時停止または再開 |
-| `BrainSync: タイマーリセット` | タイマーをリセット |
-| `BrainSync: 休憩をスキップ` | 休憩をスキップして作業開始 |
-| `BrainSync: 統計を表示` | 統計画面を開く |
-| `BrainSync: 脳疲労診断を受ける` | 診断ページを開く |
-| `BrainSync: データをエクスポート` | CSV形式でデータを保存 |
-| `BrainSync: 統計をリセット` | 統計データをクリア |
-| `BrainSync: 通知抑制を解除` | 作業中の通知抑制（Do Not Disturb）を手動で解除 |
-| `BrainSync: Slack連携を設定` | Slack トークンを登録して連携を有効化 |
-| `BrainSync: Slack連携を解除` | Slack 連携を解除しトークンを削除 |
-| `BrainSync: 設定` | 設定画面を開く |
+| Command | Description |
+|---------|-------------|
+| `BrainSync: Start Timer` | Start the timer |
+| `BrainSync: Pause/Resume Timer` | Pause or resume |
+| `BrainSync: Reset Timer` | Reset the timer |
+| `BrainSync: Skip Break` | Skip the break and start working |
+| `BrainSync: Show Statistics` | Open the statistics view |
+| `BrainSync: Take Brain Fatigue Assessment` | Open the assessment page |
+| `BrainSync: Export Data` | Save your data as CSV |
+| `BrainSync: Reset Statistics` | Clear statistics data |
+| `BrainSync: Disable Do Not Disturb` | Manually turn off the work-session notification suppression (Do Not Disturb) |
+| `BrainSync: Connect Slack` | Register a Slack token and enable the integration |
+| `BrainSync: Disconnect Slack` | Disable the Slack integration and delete the token |
+| `BrainSync: Settings` | Open the settings view |
 
-### キーボードショートカット（推奨設定）
+### Recommended Keyboard Shortcuts
 
-デフォルトでは未設定ですが、以下の設定を推奨します：
+No shortcuts are bound by default. We recommend the following:
 
 ```json
 {
@@ -83,95 +85,97 @@ BrainSync Focus Timerは、VS Code互換のすべてのエディタで動作し�
 }
 ```
 
-## 脳疲労スコアとは
+## Brain Fatigue Score
 
-作業時間と休憩パターンから、脳の疲労度を0-45点で推定します。
+Your brain fatigue is estimated on a 0–45 point scale from your work time and break patterns.
 
-| スコア | レベル | 目安 |
-|--------|--------|------|
-| 🟢 0-10点 | 良好 | そのまま作業を続けてOK |
-| 🟡 11-20点 | やや注意 | 疲労に気をつけましょう |
-| 🟠 21-30点 | 警戒 | 休息を推奨します |
-| 🔴 31-45点 | 危険 | すぐに休憩してください |
+| Score | Level | Guidance |
+|-------|-------|----------|
+| 🟢 0–10 | Good | Keep going as you are |
+| 🟡 11–20 | Caution | Watch out for fatigue |
+| 🟠 21–30 | Warning | Rest is recommended |
+| 🔴 31–45 | Danger | Take a break right away |
 
-<!-- スクリーンショット: 統計画面と脳疲労スコア -->
-<!-- ![統計画面](images/screenshots/stats.png) -->
+<!-- Screenshot: statistics view and brain fatigue score -->
+<!-- ![Statistics view](images/screenshots/stats.png) -->
 
-詳しい診断は [BrainSync脳疲労診断](https://donut-service.com/brain-fatigue-assessment/) で受けられます。
+For a detailed assessment, visit the [BrainSync brain fatigue assessment](https://donut-service.com/brain-fatigue-assessment/).
 
-## カスタマイズ
+## Customization
 
-設定 > Extensions > BrainSync から以下をカスタマイズ可能:
+You can customize the following under Settings > Extensions > BrainSync:
 
-| 設定項目 | デフォルト | 範囲 |
-|---------|-----------|------|
-| 作業時間 | 30分 | 15-60分 |
-| 短い休憩時間 | 5分 | 3-10分 |
-| 長い休憩時間 | 15分 | 10-30分 |
-| 長い休憩までのセット数 | 4セット | 2-8セット |
-| 通知 | ON | ON/OFF |
-| サウンド | ON (bell) | bell/chime/silent |
-| 音量 | 50% | 0-100% |
-| 自動休憩開始 | ON | ON/OFF |
-| 自動作業開始 | OFF | ON/OFF |
-| 脳疲労アラート | ON | ON/OFF |
-| 脳疲労アラート閾値 | 21点 | 15-30点 |
-| 作業中の通知抑制 (Do Not Disturb) | OFF | ON/OFF |
-| Slack連携 | OFF | ON/OFF |
-| Slackステータス自動設定 | ON | ON/OFF |
-| Slackステータス文言 | 集中中 | 任意の文字列 |
-| Slackステータス絵文字 | :tomato: | 絵文字コード |
+| Setting | Default | Range |
+|---------|---------|-------|
+| Work duration | 30 min | 15–60 min |
+| Short break duration | 5 min | 3–10 min |
+| Long break duration | 15 min | 10–30 min |
+| Sessions before a long break | 4 | 2–8 |
+| Notifications | ON | ON/OFF |
+| Sound | ON (bell) | bell/chime/silent |
+| Volume | 50% | 0–100% |
+| Auto-start break | ON | ON/OFF |
+| Auto-start work | OFF | ON/OFF |
+| Brain fatigue alert | ON | ON/OFF |
+| Brain fatigue alert threshold | 21 points | 15–30 points |
+| Do Not Disturb during work | OFF | ON/OFF |
+| Slack integration | OFF | ON/OFF |
+| Set Slack status automatically | ON | ON/OFF |
+| Slack status text | 集中中 | Any string |
+| Slack status emoji | :tomato: | Emoji code |
 
-> **作業中の通知抑制 (Do Not Disturb)**: ON にすると、作業セッション中だけ VS Code の通知（他拡張のトースト等）を自動で抑制し、休憩・終了時に自動で解除します。OS非依存・セットアップ不要で動作します。
-> 通知抑制中はステータスバー右側のベルアイコンが bell-slash 表示になります。何らかの理由で抑制が残った場合は、コマンド `BrainSync: 通知抑制を解除` で手動解除できます。
+> **Do Not Disturb during work**: when enabled, VS Code notifications (toasts from other extensions, etc.) are automatically suppressed only during work sessions and restored on break or finish. Works on every OS with no setup.
+> While suppression is active, the bell icon on the right of the status bar shows a bell-slash. If suppression ever gets stuck, turn it off manually with `BrainSync: Disable Do Not Disturb`.
 
-## Slack連携（任意）
+## Slack Integration (Optional)
 
-作業セッション中だけ Slack を自動で「集中モード」にします。通知を一時停止（Do Not Disturb）し、任意でステータスを「🍅 集中中」に設定。休憩・終了時に自動解除します。OS非依存で動作します。
+Automatically puts Slack into "focus mode" only during work sessions: notifications are snoozed (Do Not Disturb) and, optionally, your status is set to "🍅 Focusing". Everything is turned off automatically on break or finish. Works on every OS.
 
-### セットアップ
+### Setup
 
-事前に Slack のトークンを取得して設定する必要があります。
+You need to obtain a Slack token and register it first.
 
-1. [https://api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch**（対象ワークスペースを選択）
-2. **OAuth & Permissions** → **User Token Scopes** に次の2つを追加（Bot ではなく **User** 側）:
-   - `dnd:write`（通知の一時停止）
-   - `users.profile:write`（ステータス設定）
-3. **Install to Workspace** → 発行された **User OAuth Token（`xoxp-...`）** をコピー
-4. VS Code / Cursor で コマンド `BrainSync: Slack連携を設定` を実行し、トークンを貼り付け
-5. 設定で **Slack連携** を ON にする
+1. [https://api.slack.com/apps](https://api.slack.com/apps) → **Create New App** → **From scratch** (choose your workspace)
+2. **OAuth & Permissions** → add these two **User Token Scopes** (on the **User** side, not Bot):
+   - `dnd:write` (snooze notifications)
+   - `users.profile:write` (set status)
+3. **Install to Workspace** → copy the issued **User OAuth Token (`xoxp-...`)**
+4. In VS Code / Cursor, run the command `BrainSync: Connect Slack` and paste the token
+5. Turn on **Slack integration** in the settings
 
-### 動作
+### Behavior
 
-- 作業開始 → Slack の通知が一時停止（DND）＋ ステータス「🍅 集中中」を自動設定
-- 終了時刻（〜HH:MM）は Slack が自動で表示します（ステータス文言に時刻は含まれません）
-- 休憩・一時停止・終了 → 自動で解除
-- 解除したいときは コマンド `BrainSync: Slack連携を解除`
+- Work starts → Slack notifications are snoozed (DND) and your status is set automatically
+- Slack shows the end time (until HH:MM) by itself (the status text does not include the time)
+- Break, pause, or finish → everything is turned off automatically
+- To disable the integration, run `BrainSync: Disconnect Slack`
 
-### 連携の解除と再連携
+> **Status text**: the default status text is the Japanese "集中中" ("Focusing"). You can change it to any string with the `brainsync.slackStatusText` setting.
 
-トークンは一度設定すれば OS のセキュアストレージに保管され、**再起動しても保持されます**（通常は入れ直し不要）。
+### Disconnecting and Reconnecting
 
-ただし **`BrainSync: Slack連携を解除` を実行するとトークンは削除されます**。そのため、一度解除したあとに再び連携するには、**もう一度 `BrainSync: Slack連携を設定` からトークンを設定し直す必要があります**。
+Once registered, the token is kept in your OS secure storage and **persists across restarts** (you normally don't need to enter it again).
 
-- 再連携には、同じ User OAuth Token（`xoxp-...`）をそのまま使えます（解除は拡張からトークンを消すだけで、Slack 側のアプリは有効なままです）。
-- トークンを控えていない場合は、[api.slack.com/apps](https://api.slack.com/apps) → 対象アプリ → **OAuth & Permissions** から再取得できます。
-- トークンが無効・失効した場合は、拡張が自動で連携を無効化して通知するので、その後同じ手順で再設定してください。
+However, **running `BrainSync: Disconnect Slack` deletes the token**. To reconnect after disconnecting, **you must register the token again with `BrainSync: Connect Slack`**.
 
-### プライバシー
+- You can reuse the same User OAuth Token (`xoxp-...`) — disconnecting only removes it from the extension; the Slack app itself stays installed.
+- If you no longer have the token, get it again from [api.slack.com/apps](https://api.slack.com/apps) → your app → **OAuth & Permissions**.
+- If the token becomes invalid or expires, the extension disables the integration automatically and notifies you; register it again the same way afterwards.
 
-- **トークンは VS Code の SecretStorage（OS のセキュアストレージ）に安全に保管**され、設定ファイルには保存されません。他マシンにも同期されません。保管先は OS ごとに異なります（macOS: キーチェーン / Windows: 資格情報マネージャー / Linux: libsecret 系のキーリング）。
-- 送信先は Slack API（`https://slack.com`）のみで、送信するのは「通知停止時間・ステータス文言・トークン」だけです。**セッション統計や作業内容は一切送信しません**。
-- Slack連携を無効にしている場合は、従来どおり完全にローカルで動作します。
+### Privacy
 
-## インストール
+- **The token is stored securely in VS Code's SecretStorage (your OS secure storage)** and is never written to settings files or synced to other machines. The storage location depends on the OS (macOS: Keychain / Windows: Credential Manager / Linux: libsecret-based keyring).
+- The only destination is the Slack API (`https://slack.com`), and the only data sent is the snooze duration, the status text, and the token. **Session statistics and what you work on are never sent.**
+- With the Slack integration disabled, the extension keeps working fully offline as before.
 
-### マーケットプレイスから（推奨）
+## Installation
 
-1. VS Code / Cursor の拡張機能マーケットプレイスで「**BrainSync**」を検索
-2. インストールボタンをクリック
+### From the Marketplace (Recommended)
 
-### コマンドラインから
+1. Search for "**BrainSync**" in the VS Code / Cursor extension marketplace
+2. Click Install
+
+### From the Command Line
 
 ```bash
 # VS Code
@@ -181,68 +185,68 @@ code --install-extension donut-service.brainsync-focus-timer
 cursor --install-extension donut-service.brainsync-focus-timer
 ```
 
-## プライバシーポリシー
+## Privacy Policy
 
-**ローカル保存データ:**
-- タイマーセッション記録（開始時刻、終了時刻、完了/中断状態）
-- 統計データ（日次・週次の集計）
-- 設定情報
-- Slackトークン（Slack連携を使う場合のみ、SecretStorage = OS のセキュアストレージに保管）
+**Data stored locally:**
+- Timer session records (start time, end time, completed/interrupted)
+- Statistics (daily and weekly aggregates)
+- Settings
+- Slack token (only when using the Slack integration; kept in SecretStorage = your OS secure storage)
 
-タイマー・統計・設定はVS CodeのGlobal Stateに保存され、お使いのコンピューター内に留まります。Slackトークンは平文の設定ファイルには保存されず、他マシンにも同期されません。
+Timer data, statistics, and settings are stored in VS Code's Global State and never leave your computer. The Slack token is never written to plain-text settings files or synced to other machines.
 
-**外部送信データ:**
-- 診断ページへのリンクを開く際、UTMパラメータ（利用元の情報）を付与します
-- **Slack連携を有効にした場合のみ**、Slack API（`https://slack.com`）へ「通知停止時間・ステータス文言・トークン」を送信します
-- 個人を特定する情報は一切送信しません
-- セッションデータや統計データは送信しません（Slackにも送りません）
+**Data sent externally:**
+- When opening the assessment page, UTM parameters (referrer information) are appended to the link
+- **Only when the Slack integration is enabled**, the snooze duration, status text, and token are sent to the Slack API (`https://slack.com`)
+- No personally identifiable information is ever sent
+- Session data and statistics are never sent (not to Slack either)
 
-## セキュリティ
+## Security
 
-- Webview内で実行されるスクリプトはContent Security Policy (CSP)で保護
-- 外部スクリプトの読み込みは一切行いません
-- すべてのデータはローカルに保存され、外部サーバーへの送信は行いません
+- Scripts running inside the webview are protected by a Content Security Policy (CSP)
+- No external scripts are ever loaded
+- All data is stored locally; nothing is sent to external servers
 
-## トラブルシューティング
+## Troubleshooting
 
-### 通知が表示されない
+### Notifications are not shown
 
-- 拡張機能の設定で `brainsync.notificationEnabled` が有効になっているか確認してください
-- VS Code / Cursorの「応答不可モード」（Do Not Disturb）が有効になっている場合、通知がブロックされることがあります。設定 > 通知 > 「応答不可モードを有効にする」の拡張機能一覧で、**BrainSync Focus Timer にチェックが入っていない**ことを確認してください（チェックが入っていると通知がブロックされます）
+- Make sure `brainsync.notificationEnabled` is turned on in the extension settings
+- If VS Code / Cursor's Do Not Disturb mode is on, notifications may be blocked. Under Settings > Notifications > "Enable Do Not Disturb mode", make sure **BrainSync Focus Timer is not checked** in the extension list (a checked entry blocks its notifications)
 
-### タイマーがリセットされる
+### The timer gets reset
 
-ウィンドウを閉じてもタイマーは継続しますが、完全終了すると状態がリセットされる場合があります。VS Code再起動時には自動的に復元されます。
+The timer keeps running when you close a window, but its state may be reset if the editor exits completely. It is restored automatically when VS Code restarts.
 
-### サウンドが再生されない
+### Sound is not playing
 
-- 拡張機能の設定で `brainsync.soundEnabled` が有効か確認
-- `brainsync.soundVolume` が0になっていないか確認
-- `brainsync.soundFile` が `silent` に設定されていないか確認
+- Check that `brainsync.soundEnabled` is turned on in the extension settings
+- Check that `brainsync.soundVolume` is not 0
+- Check that `brainsync.soundFile` is not set to `silent`
 
-### 統計データが消えた
+### Statistics disappeared
 
-データはGlobal Stateに保存されています。拡張機能を削除すると消えます。定期的なエクスポートをお勧めします。
+Data is stored in Global State and is removed when the extension is uninstalled. We recommend exporting regularly.
 
-## 貢献
+## Contributing
 
-バグ報告や機能リクエストは [GitHub Issues](https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension/issues) へお願いします。
+Please report bugs and request features via [GitHub Issues](https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension/issues).
 
-プルリクエストも歓迎します！
+Pull requests are welcome!
 
-## ライセンス
+## License
 
-MIT License - 詳細は [LICENSE](LICENSE) を参照
+MIT License — see [LICENSE](LICENSE) for details
 
-## 作者
+## Author
 
 **Donut Service**
 - Website: https://donut-service.com
 - Email: contact@donut-service.com
 
-## リンク
+## Links
 
-- [BrainSync公式サイト](https://donut-service.com)
-- [脳疲労診断ページ](https://donut-service.com/brain-fatigue-assessment/)
-- [GitHub リポジトリ](https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension)
-- [変更履歴](CHANGELOG.md)
+- [BrainSync official site](https://donut-service.com)
+- [Brain fatigue assessment page](https://donut-service.com/brain-fatigue-assessment/)
+- [GitHub repository](https://github.com/YukiTachi/brainsync-pomodoro-vscode-extension)
+- [Changelog](CHANGELOG.md)

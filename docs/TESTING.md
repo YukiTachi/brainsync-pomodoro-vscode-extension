@@ -254,6 +254,26 @@ Extension Development Host で拡張機能を起動した後、以下の項目�
 - [ ] トークンを無効化（Slack でアプリ削除）して作業 → 「トークンが無効」通知が**一度だけ**出て、`slackIntegration` が自動で OFF になる
 - [ ] `BrainSync: Slack連携を解除` → DND / ステータスが消え、トークンが削除される（作業中でなくても解除できる）
 
+### マーケットプレースの多言語化（英語対応）
+
+> `package.nls.json`（英語・既定）と `package.nls.ja.json`（日本語）でコマンド名・設定説明を出し分けています。
+
+- [ ] `npm run test:unit` で `package.nls 整合性` スイートが全件パスする（`%key%` と nls キーの完全一致・英語側に日本語が残っていない）
+- [ ] `npx @vscode/vsce package` 後、`extension.vsixmanifest` の `DisplayName` / `Description` に **`%` が残っておらず英語が入っている**（VS Code Marketplace 向け）
+  ```bash
+  unzip -p brainsync-focus-timer-*.vsix extension.vsixmanifest | grep -oE '<(DisplayName|Description)[^>]*>[^<]*'
+  ```
+- [ ] vsix に `extension/package.nls.json` と `extension/package.nls.ja.json` の **2 ファイルが同梱**されている（Open VSX は vsix 内 `package.json` の `%key%` をこの nls で自前解決するため必須）
+  ```bash
+  unzip -l brainsync-focus-timer-*.vsix | grep package.nls
+  ```
+- [ ] vsix をインストールし、表示言語 **English**（`Configure Display Language`）でコマンドパレット・設定画面が**英語**になる
+- [ ] 表示言語 **日本語** に戻すと従来どおり**日本語**で表示される
+- [ ] 設定項目数が **17 のまま**（増減していない）
+- [ ] `Cmd+Shift+P` で `BrainSync: Start Timer` が英語名で検索・実行できる
+- [ ] `README.md`（英語）と `README.ja.md`（日本語）の先頭の言語リンクが相互に機能する
+- [ ] 公開後、VS Code Marketplace / Open VSX のページで displayName・description・README が**英語**で表示される（Open VSX は取り込み経路が別なので念のため目視）
+
 ### その他
 
 - [ ] `BrainSync: 脳疲労診断を受ける` で外部ブラウザが開く
